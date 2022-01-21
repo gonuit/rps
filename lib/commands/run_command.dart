@@ -1,35 +1,25 @@
 import 'dart:io';
 
-import 'package:args/command_runner.dart';
 import 'package:rps/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
 
-class RunCommand extends Command<int> {
+class RunCommand {
   final Pubspec pubspec;
 
   RunCommand(this.pubspec);
-  @override
   String get description => 'Run script from pubspec.yaml.';
 
-  @override
   String get name => 'run';
 
-  @override
-  Future<int> run() async {
-    final arguments = argResults?.arguments;
-    if (arguments == null) {
-      throw RpsException('Missing $name command arguments.');
-    }
+  Future<int> run(List<String> args) async {
+    final arguments = args;
 
     var beforeExitCode = 0;
     final beforeCmd = pubspec.getCommand(arguments, before: true);
     if (beforeCmd.command != null) {
+      stdout.writeln('${applyBoldGreen('>')} ${beforeCmd.path}');
       stdout.writeln(
-        '\n${applyBoldGreen('>')} ${beforeCmd.path}',
-      );
-      stdout.writeln(
-        '${applyBoldGreen(r'$')} '
-        '${applyBold(beforeCmd.command!)}\n',
+        '${applyBoldGreen(r'$')} ${applyBold(beforeCmd.command!)}\n',
       );
       beforeExitCode = await bindings.execute(beforeCmd.command!);
     }
@@ -38,12 +28,9 @@ class RunCommand extends Command<int> {
     }
 
     final cmd = pubspec.getCommand(arguments);
+    stdout.writeln('${applyBoldGreen('>')} ${cmd.path}');
     stdout.writeln(
-      '\n${applyBoldGreen('>')} ${cmd.path}',
-    );
-    stdout.writeln(
-      '${applyBoldGreen(r'$')} '
-      '${applyBold(cmd.command!)}\n',
+      '${applyBoldGreen(r'$')} ${applyBold(cmd.command!)}\n',
     );
     final exitCode = await bindings.execute(cmd.command!);
 
@@ -54,12 +41,9 @@ class RunCommand extends Command<int> {
     var afterExitCode = 0;
     final afterCmd = pubspec.getCommand(arguments, after: true);
     if (afterCmd.command != null) {
+      stdout.writeln('${applyBoldGreen('>')} ${afterCmd.path}');
       stdout.writeln(
-        '\n${applyBoldGreen('>')} ${afterCmd.path}',
-      );
-      stdout.writeln(
-        '${applyBoldGreen(r'$')} '
-        '${applyBold(afterCmd.command!)}\n',
+        '${applyBoldGreen(r'$')} ${applyBold(afterCmd.command!)}\n',
       );
       afterExitCode = await bindings.execute(afterCmd.command!);
     }

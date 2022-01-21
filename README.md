@@ -70,14 +70,14 @@ Running `rps test echo` command produces following output:
 $ echo "before-test"
 
 before-test
-
 > test echo
 $ echo "test"
 
 test
-
 > test after-echo
 $ echo "after-test"
+
+after-test
 ```
 
 ---
