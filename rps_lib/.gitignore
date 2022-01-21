@@ -1,0 +1,35 @@
+# ffi
+*.o
+*.dylib
+a.out
+.vscode/
+.packages
+sdk-version
+*snapshot*
+pubspec.lock
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+primitives/primitives_library/primitives_test
+structs/structs_library/structs_test
+*.recipe
+*.tlog
+*.log
+*.pdb
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.ilk
+.vs
+Debug
+Release
+rps_test
+
+# Windows
+*.obj
+*.dll
+*.lib
+*.exe
+*.exp

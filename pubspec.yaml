@@ -1,0 +1,25 @@
+name: rps
+description: Define and run scripts from pubspec.yaml.
+version: 0.6.1
+repository: https://github.com/gonuit/rps
+homepage: https://github.com/gonuit/rps
+issue_tracker: https://github.com/gonuit/rps/issues
+
+scripts:
+  test:
+    before-echo: echo "before-test"
+    echo: echo "test"
+    after-echo: echo "after-test"
+
+environment:
+  sdk: ">=2.12.0 <3.0.0"
+
+dependencies:
+  yaml: ^3.1.0
+  args: ^2.3.0
+  path: ^1.7.0
+  ffi: ^1.1.2
+
+dev_dependencies:
+  pedantic: ^1.9.0
+  test: ^1.14.4
