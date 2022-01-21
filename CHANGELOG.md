@@ -1,3 +1,5 @@
+## 0.6.2
+- Exposed executables.
 ## 0.6.1
 - Minor bug fixes and improvements. 🚧
 - Added colorful logs. 🎨
