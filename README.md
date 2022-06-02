@@ -21,16 +21,16 @@ Define and use scripts from your _pubspec.yaml_ file.
       # run is a default script. To use it, simply type
       # in the command line: "rps" - that's all!
       run: "flutter run -t lib/main_development.dart --flavor development"
-         # you can define more commands like this: "rps gen"
-         gen: "flutter pub run build_runner watch --delete-conflicting-outputs"
-         # and even nest them!
-         build:
-         android:
-         # rps build android apk
-         apk: "flutter build --release apk --flavor production"
-         # rps build android appbundle
-         appbundle: "flutter build --release appbundle --flavor production"
-         # and so on...
+      # you can define more commands like this: "rps gen"
+      gen: "flutter pub run build_runner watch --delete-conflicting-outputs"
+      # and even nest them!
+      build:
+      android:
+      # rps build android apk
+      apk: "flutter build --release apk --flavor production"
+      # rps build android appbundle
+      appbundle: "flutter build --release appbundle --flavor production"
+      # and so on...
 
    # the rest of your pubspec file...
    dependencies:
