@@ -1,3 +1,5 @@
+## 0.6.4
+- Fixed readme example
 ## 0.6.3
 - Minor bug fixes and improvements. 🚧
 ## 0.6.2
