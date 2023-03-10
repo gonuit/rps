@@ -1,3 +1,7 @@
+## 0.6.5
+- Update dependencies
+- Longer description in pubspec.yqml
+- pedantic (deprecated) replaced by flutter_lints
 ## 0.6.4
 - Fixed readme example
 ## 0.6.3
