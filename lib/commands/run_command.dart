@@ -14,43 +14,42 @@ class RunCommand {
   Future<int> run(List<String> args) async {
     final arguments = args;
 
-    var beforeExitCode = 0;
-    final beforeCmd = pubspec.getCommand(arguments, before: true);
-    if (beforeCmd.command != null) {
-      stdout.writeln('${applyBoldGreen('>')} ${beforeCmd.path}');
-      stdout.writeln(
-        '${applyBoldGreen(r'$')} ${applyBold(beforeCmd.command!)}\n',
+    /// Cycle detection is based on duplicates, this can be improved
+    final commands = <PubspecCommand>{};
+
+    int commandsCount = 0;
+    for (final command in pubspec.getCommands(arguments)) {
+      commands.add(command);
+      if (commands.length < ++commandsCount) {
+        throw RpsException(
+          'Script cycle detected: ${[
+            ...commands.map((e) => e.path),
+            command.path
+          ].join(' → ')}',
+        );
+      }
+    }
+
+    if (commands.isEmpty) {
+      throw RpsException(
+        'Missing script. Command: "${arguments.join(' ')}" '
+        'is not a full path.',
       );
-      beforeExitCode = await bindings.execute(beforeCmd.command!);
-    }
-    if (beforeExitCode > 0) {
-      throw RpsException('"before-" hook failed.');
     }
 
-    final cmd = pubspec.getCommand(arguments);
-    stdout.writeln('${applyBoldGreen('>')} ${cmd.path}');
-    stdout.writeln(
-      '${applyBoldGreen(r'$')} ${applyBold(cmd.command!)}\n',
-    );
-    final exitCode = await bindings.execute(cmd.command!);
-
-    if (exitCode > 0) {
-      throw RpsException('Command ended with a non zero exit code.');
-    }
-
-    var afterExitCode = 0;
-    final afterCmd = pubspec.getCommand(arguments, after: true);
-    if (afterCmd.command != null) {
-      stdout.writeln('${applyBoldGreen('>')} ${afterCmd.path}');
+    for (final command in commands.whereType<ExecutableCommand>()) {
+      stdout.writeln('${applyBoldGreen('>')} ${command.path}');
       stdout.writeln(
-        '${applyBoldGreen(r'$')} ${applyBold(afterCmd.command!)}\n',
+        '${applyBoldGreen(r'$')} ${applyBold(command.command!)}\n',
       );
-      afterExitCode = await bindings.execute(afterCmd.command!);
-    }
-    if (afterExitCode > 0) {
-      throw RpsException('"after-" hook failed.');
+      final exitCode = await bindings.execute(command.command!);
+
+      if (exitCode > 0) {
+        throw RpsException('Command ended with a non zero exit code.');
+      }
+      stdout.writeln();
     }
 
-    return exitCode;
+    return 0;
   }
 }

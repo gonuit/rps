@@ -1,26 +1,12 @@
 name: rps
 description: rps (Run Pubspec Script) allows you to define and run scripts from pubspec.yaml.
-version: 0.6.5
+version: 0.7.0-dev.1
 repository: https://github.com/gonuit/rps
 homepage: https://github.com/gonuit/rps
 issue_tracker: https://github.com/gonuit/rps/issues
 
 executables:
   rps:
-
-scripts:
-  run: echo 123
-  echo-1: echo "1"
-  echo-2: 
-    command: echo "2"
-  echo-3: 
-    # at least one command needs to be provided
-    command: 
-      default: echo "3" # optional
-      windows: echo "3" # optional
-      macos: echo "3" # optional
-      linux: echo "3" # optional
-
 
 environment:
   sdk: ">=2.19.4 <4.0.0"
