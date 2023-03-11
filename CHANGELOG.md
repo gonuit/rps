@@ -1,4 +1,4 @@
-## 0.7.0-dev.1
+## 0.7.0-dev.4
 
 ### BREAKING CHANGES
 
@@ -39,6 +39,7 @@
     clear: $c
     delete: $clear
   ```
+
   This is just a simple proxy example, but you can also use it in `$before` and `$after` hooks to chain multiple scripts together.
 
 - ⚠️ The `before-` and `after-` hooks has been removed. Instead use the `$before` and `$after` keys. This will help keep hook scripts grouped in a project with multiple scripts defined.
@@ -51,27 +52,7 @@
       $after: echo "after"
   ```
 
-  Execute as always.
-
-  ```
-  user@MacBook-Pro Desktop % rps hooks
-  > hooks $before
-  $ echo "before"
-
-  before
-
-  > hooks
-  $ echo "script"
-
-  script
-
-  > hooks $after
-  $ echo "after"
-
-  after
-
-  user@MacBook-Pro Desktop %
-  ```
+  Execute by calling the `rps hooks`.
 
   It is also possible to link multiple scripts together!
 

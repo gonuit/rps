@@ -36,7 +36,7 @@ Define and use scripts from your _pubspec.yaml_ file.
      # too long command? no problem! define alias using reference syntax!
      bab: $build android appbundle
      # as simple as typing "rps baa"
-     baa: $build android apk 
+     baa: $build android apk
      # some commands may vary from platform to platform
      # but that's not a problem
      clear:
@@ -48,8 +48,7 @@ Define and use scripts from your _pubspec.yaml_ file.
          $windows: rd /s /q ./cache
          # now "rps clear" will work on any platform!
 
-
-   # the rest of your pubspec file...
+     # the rest of your pubspec file...
    dependencies:
      path: ^1.7.0
    ```
@@ -124,25 +123,7 @@ scripts:
     $after: echo "hello after" # executed after $script
 ```
 
-Execute as always.
-
-```
-user@MacBook-Pro Desktop % rps hooks
-> hooks $before
-$ echo "hello before"
-
-hello before
-
-> hooks
-$ echo "hello script"
-
-hello script
-
-> hooks $after
-$ echo "hello after"
-
-hello after
-```
+Execute by calling the `rps hooks`.
 
 You can also combine multiple scripts using references!
 
