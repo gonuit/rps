@@ -1,4 +1,4 @@
-## 0.7.0-dev.6
+## 0.7.0
 
 ### BREAKING CHANGES
 
