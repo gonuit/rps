@@ -184,6 +184,10 @@ scripts:
       # And different script for the windows platform.
       $windows: rd /s /q app\cache
       # now "rps clear" will work on any platform!
+  # want to run multi line script, here is an example
+  reset: |
+    flutter clean 
+    flutter pub get
 
   # the rest of your pubspec file...
 dependencies:
