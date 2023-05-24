@@ -8,11 +8,6 @@ issue_tracker: https://github.com/gonuit/rps/issues
 executables:
   rps:
 
-scripts: 
-  wait: echo "${0}"
-  hello: 
-    $script: $wait
-
 environment:
   sdk: ">=2.19.4 <4.0.0"
 

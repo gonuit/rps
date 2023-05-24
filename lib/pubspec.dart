@@ -330,9 +330,6 @@ class Pubspec {
       yield* _examinateCommand(
         path: [...context.path, key].join(' '),
         command: value,
-
-        /// TODO? ignore for hooks
-        rest: [],
       );
     }
   }
