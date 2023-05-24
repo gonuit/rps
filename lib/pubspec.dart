@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'dart:math' as math;
+import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:rps/rps_exception.dart';
 import 'package:yaml/yaml.dart';
@@ -9,6 +12,7 @@ class ScriptContext {
   final List<String> path;
   String get stringPath => path.join(' ');
 
+  /// List of remaining arguments
   List<String> get rest => arguments.sublist(position + 1);
 
   final int position;
@@ -43,66 +47,104 @@ class ScriptContext {
   }
 }
 
+@immutable
 abstract class PubspecCommand {
-  final String path;
-  final String? command;
+  String get path;
+  String? get command;
 
   /// Whether this command should be executed
   bool get executable;
-
-  PubspecCommand(this.path, this.command);
-
-  @override
-  bool operator ==(Object other) {
-    return other is PubspecCommand &&
-        other.command == command &&
-        other.path == path;
-  }
-
-  @override
-  int get hashCode => Object.hash(path, command, runtimeType);
 }
 
-class ExecutableCommand extends PubspecCommand {
+class PositionalArgument {
+  final int position;
+  final int start;
+  final int end;
+
+  PositionalArgument(this.position, this.start, this.end);
+}
+
+class ExecutableCommand extends PubspecCommand with EquatableMixin {
   @override
   bool get executable => true;
 
-  ExecutableCommand(super.path, super.command);
-
   @override
-  bool operator ==(Object other) {
-    return other is ExecutableCommand &&
-        other.command == command &&
-        other.path == path;
+  final String command;
+  @override
+  final String path;
+
+  static final _positionalArgumentsRegexp = RegExp(r'\$\{\s{0,}[0-9]+\s{0,}\}');
+
+  ExecutableCommand._(this.command, this.path);
+
+  factory ExecutableCommand(String path, String command, List<String> rest) {
+    final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
+
+    if (argumentsInCommand.isNotEmpty) {
+      final usedArguments = <int>{};
+      final filledCommand = command.replaceAllMapped(
+        _positionalArgumentsRegexp,
+        (match) {
+          final content = match.group(0)!;
+          final value = content.substring(2, content.length - 1).trim();
+          final argumentIndex = int.tryParse(value);
+          if (argumentIndex == null) {
+            throw RpsException(
+              "Bad argument script ($content). "
+              "Only positional arguments are supported.",
+            );
+          } else if (argumentIndex >= rest.length) {
+            throw RpsException(
+              'The script "$path" defines a positional argument $content, '
+              'but ${rest.length} positional argument(s) are given.',
+            );
+          } else {
+            usedArguments.add(argumentIndex);
+            return rest[argumentIndex];
+          }
+        },
+      );
+
+      final lastUsed = usedArguments.reduce(math.max);
+      if (lastUsed > usedArguments.length) {
+        final unusedArguments = List<int>.generate(lastUsed, (index) => index)
+            .where((e) => !usedArguments.contains(e));
+
+        throw RpsException(
+          'The script defines unused positional argument(s): '
+          '${unusedArguments.map((a) => '\${$a}').join(', ')}',
+        );
+      }
+
+      return ExecutableCommand._(
+        [filledCommand, ...rest.sublist(lastUsed + 1)].join(' '),
+        path,
+      );
+    } else {
+      return ExecutableCommand._([command, ...rest].join(' '), path);
+    }
   }
 
   @override
-  int get hashCode => Object.hash(path, command, runtimeType);
-
-  @override
-  String toString() => 'ExecutableCommand("$path": "$command")';
+  List<Object?> get props => [command, path];
 }
 
 /// Indicates that reference was made to the command
-class RefCommand extends PubspecCommand {
-  RefCommand(String path) : super(path, null);
-
+class RefCommand extends PubspecCommand with EquatableMixin {
   /// This command is only a trace mark, nothing to call here.
   @override
   bool get executable => false;
 
   @override
-  bool operator ==(Object other) {
-    return other is RefCommand &&
-        other.command == command &&
-        other.path == path;
-  }
+  Null get command => null;
 
   @override
-  int get hashCode => Object.hash(path, runtimeType);
+  final String path;
+
+  RefCommand(this.path);
 
   @override
-  String toString() => 'HookCommand("$path")';
+  List<Object?> get props => [path];
 }
 
 class Pubspec {
@@ -177,8 +219,9 @@ class Pubspec {
       );
     } else if (value is String) {
       yield* _examinateCommand(
-        command: [value, ...context.rest].join(' '),
+        command: value,
         path: context.stringPath,
+        rest: context.rest,
       );
     } else if (value is Map) {
       yield* _getHookCommands(
@@ -190,7 +233,11 @@ class Pubspec {
       if (_hasScriptKey(value)) {
         final script = value[scriptKey];
         if (script is String) {
-          yield* _examinateCommand(command: script, path: context.stringPath);
+          yield* _examinateCommand(
+            command: script,
+            path: context.stringPath,
+            rest: context.rest,
+          );
         } else if (script is Map) {
           final platformKey = '\$${Platform.operatingSystem}';
           final command = script[platformKey] ?? script[defaultScriptKey];
@@ -205,7 +252,8 @@ class Pubspec {
           } else {
             yield* _examinateCommand(
               command: command,
-              path: [context.stringPath, ...context.rest].join(' '),
+              path: context.stringPath,
+              rest: context.rest,
             );
           }
         }
@@ -234,12 +282,13 @@ class Pubspec {
   Iterable<PubspecCommand> _examinateCommand({
     required String command,
     required String path,
+    required List<String> rest,
   }) sync* {
     if (command.startsWith(r'$')) {
       yield RefCommand(path);
       yield* getCommands(command.substring(1).split(RegExp(r'\s+')));
     } else {
-      yield ExecutableCommand(path, command);
+      yield ExecutableCommand(path, command, rest);
     }
   }
 
@@ -261,6 +310,9 @@ class Pubspec {
       yield* _examinateCommand(
         path: [...context.path, key].join(' '),
         command: value,
+
+        /// TODO? ignore for hooks
+        rest: [],
       );
     }
   }
