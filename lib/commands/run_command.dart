@@ -40,9 +40,9 @@ class RunCommand {
     for (final command in commands.whereType<ExecutableCommand>()) {
       stdout.writeln('${applyBoldGreen('>')} ${command.path}');
       stdout.writeln(
-        '${applyBoldGreen(r'$')} ${applyBold(command.command!)}\n',
+        '${applyBoldGreen(r'$')} ${applyBold(command.command)}\n',
       );
-      final exitCode = await bindings.execute(command.command!);
+      final exitCode = await bindings.execute(command.command);
 
       if (exitCode > 0) {
         throw RpsException('Command ended with a non zero exit code.');
