@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:rps/rps_exception.dart';
@@ -64,7 +63,7 @@ class PositionalArgument {
   PositionalArgument(this.position, this.start, this.end);
 }
 
-class ExecutableCommand extends PubspecCommand with EquatableMixin {
+class ExecutableCommand extends PubspecCommand {
   @override
   bool get executable => true;
 
@@ -77,7 +76,11 @@ class ExecutableCommand extends PubspecCommand with EquatableMixin {
 
   ExecutableCommand._(this.command, this.path);
 
-  factory ExecutableCommand(String path, String command, List<String> rest) {
+  factory ExecutableCommand(
+    String path,
+    String command, [
+    List<String> rest = const <String>[],
+  ]) {
     final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
 
     if (argumentsInCommand.isNotEmpty) {
@@ -126,11 +129,18 @@ class ExecutableCommand extends PubspecCommand with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [command, path];
+  bool operator ==(Object other) {
+    return other is ExecutableCommand &&
+        other.command == command &&
+        other.path == path;
+  }
+
+  @override
+  int get hashCode => Object.hash(path, command, runtimeType);
 }
 
 /// Indicates that reference was made to the command
-class RefCommand extends PubspecCommand with EquatableMixin {
+class RefCommand extends PubspecCommand {
   /// This command is only a trace mark, nothing to call here.
   @override
   bool get executable => false;
@@ -144,7 +154,14 @@ class RefCommand extends PubspecCommand with EquatableMixin {
   RefCommand(this.path);
 
   @override
-  List<Object?> get props => [path];
+  bool operator ==(Object other) {
+    return other is RefCommand &&
+        other.command == command &&
+        other.path == path;
+  }
+
+  @override
+  int get hashCode => Object.hash(path, command, runtimeType);
 }
 
 class Pubspec {
@@ -282,11 +299,14 @@ class Pubspec {
   Iterable<PubspecCommand> _examinateCommand({
     required String command,
     required String path,
-    required List<String> rest,
+    List<String> rest = const <String>[],
   }) sync* {
     if (command.startsWith(r'$')) {
       yield RefCommand(path);
-      yield* getCommands(command.substring(1).split(RegExp(r'\s+')));
+      yield* getCommands([
+        ...command.substring(1).split(RegExp(r'\s+')),
+        ...rest,
+      ]);
     } else {
       yield ExecutableCommand(path, command, rest);
     }

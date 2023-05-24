@@ -1,12 +1,17 @@
 name: rps
 description: rps (Run Pubspec Script) allows you to define and run scripts from pubspec.yaml.
-version: 0.8.0-dev.1
+version: 0.8.0-dev.2
 repository: https://github.com/gonuit/rps
 homepage: https://github.com/gonuit/rps
 issue_tracker: https://github.com/gonuit/rps/issues
 
 executables:
   rps:
+
+scripts: 
+  wait: echo "${0}"
+  hello: 
+    $script: $wait
 
 environment:
   sdk: ">=2.19.4 <4.0.0"
@@ -15,7 +20,6 @@ dependencies:
   yaml: ^3.1.1
   path: ^1.8.2
   ffi: ^2.0.1
-  equatable: ^2.0.5
   meta: ^1.9.1
 
 dev_dependencies:
