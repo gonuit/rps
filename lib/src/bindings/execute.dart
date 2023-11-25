@@ -12,11 +12,11 @@ Future<int> execute(String command) async {
   const rootLibrary = 'package:rps/rps.dart';
   final uri = await Isolate.resolvePackageUri(Uri.parse(rootLibrary));
   if (uri == null) {
-    print('Library cannot be loaded.');
+    print('Cannot load the library.');
     exit(1);
   }
 
-  final root = path.fromUri(uri.resolve('native').path);
+  final root = path.fromUri(uri.resolve(path.join('..', 'native')).path);
   // Open the dynamic library
   late String libraryPath;
   if (Platform.isMacOS) {
