@@ -1,27 +1,45 @@
 import 'dart:io';
 
-import 'package:rps/commands/run_command.dart';
-import 'package:rps/pubspec.dart';
-import 'package:rps/rps.dart' as rps;
-import 'package:rps/rps_exception.dart';
-import 'package:rps/utils.dart';
-import 'package:rps/bindings/execute.dart' as bindings;
+import 'package:rps/src/utils/rps_package.dart';
+import 'package:rps/rps.dart';
+import 'package:rps/src/bindings/execute.dart' as bindings;
 
 void main(List<String> args) async {
   try {
+    final package = await RpsPackage.load();
+    if (true) {
+      try {
+        final versions = await package.getVersions();
+        if (versions.hasUpdate) {
+          stdout.writeAll([
+            '\nUpdate available ',
+            applyGrayColor(versions.current.toString()),
+            ' → ',
+            applyGreenColor(versions.latest.toString()),
+            '\nRun ',
+            applyLightBlueColor('dart pub global activate rps'),
+            ' to update\n\n',
+          ]);
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      } on Exception {
+        // ignore
+      }
+    }
+
     if (args.length == 1 && args.first.trim() == '--version' ||
         args.first.trim() == '-v') {
-      final ver = await rps.getPackageVersion();
       stdout
         ..writeln()
-        ..writeln('📝 rps version: ${rps.applyBold(ver)}')
+        ..writeln('📝 rps version: ${applyBold(package.version.toString())}')
         ..writeln();
       exit(0);
     } else if (args.length == 1 && args.first.trim() == '--help' ||
         args.first.trim() == '-h') {
-      final ver = await rps.getPackageVersion();
       stdout.writeln(
-        '${applyBold('Run Pubspec Script')} (${applyBoldGreen('rps')}) ${rps.applyBold("v$ver")}\n\n'
+        '${applyBold('Run Pubspec Script')} '
+        '(${applyBoldGreen('rps')}) '
+        '${applyBold("v${package.version}")}\n\n'
         '${applyBold('Options')}:\n'
         '  -v, --version - prints version.\n'
         '  -h, --help    - prints help.\n'
@@ -69,11 +87,11 @@ void main(List<String> args) async {
       }
     }
   } on RpsException catch (err) {
-    stderr.writeln("${rps.applyBoldRed('Error!')} ${err.message}");
+    stderr.writeln("${applyBoldRed('Error!')} ${err.message}");
     await stderr.flush();
     exit(1);
   } catch (err, st) {
-    stderr.writeln("${rps.applyBoldRed('Error!')} $err\n$st");
+    stderr.writeln("${applyBoldRed('Error!')} $err\n$st");
     await stderr.flush();
     exit(1);
   }

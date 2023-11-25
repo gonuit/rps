@@ -2,8 +2,9 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-import 'package:rps/rps_exception.dart';
 import 'package:yaml/yaml.dart';
+
+import 'exceptions/rps_exception.dart';
 
 class ScriptContext {
   final Map scripts;
@@ -20,12 +21,12 @@ class ScriptContext {
 
   bool get hasMoreArguments => position + 1 < arguments.length;
 
-  ScriptContext(
-      {required Map scripts,
-      required List<String> arguments,
-      List<String>? path,
-      this.position = 0})
-      : arguments = List.unmodifiable(arguments),
+  ScriptContext({
+    required Map scripts,
+    required List<String> arguments,
+    List<String>? path,
+    this.position = 0,
+  })  : arguments = List.unmodifiable(arguments),
         path = List.unmodifiable(path ?? [arguments[position]]),
         scripts = Map.unmodifiable(scripts);
 
@@ -177,14 +178,10 @@ class Pubspec {
 
   Pubspec._(this.directory, this.parsed);
 
-  static Future<Pubspec> load(Directory directory) async {
+  factory Pubspec.load(Directory directory) {
     bool isPubspecFile(File file) => p.basename(file.path) == Pubspec.filename;
 
-    final pubspecFile = await directory
-        .list()
-        .where((entity) => entity is File)
-        .cast<File>()
-        .firstWhere(
+    final pubspecFile = directory.listSync().whereType<File>().firstWhere(
           isPubspecFile,
           orElse: () => throw RpsException(
             'Cannot find pubspec.yaml file in the current directory '
@@ -193,7 +190,7 @@ class Pubspec {
         );
 
     try {
-      final pubspecString = await pubspecFile.readAsString();
+      final pubspecString = pubspecFile.readAsStringSync();
       final parsed = Map.unmodifiable(loadYaml(pubspecString));
 
       return Pubspec._(directory, parsed);
@@ -202,8 +199,8 @@ class Pubspec {
     }
   }
 
-  String? get packageVersion => parsed['version'];
-  String? get packageName => parsed['name'];
+  String get packageVersion => parsed['version']!;
+  String get packageName => parsed['name']!;
 
   Iterable<PubspecCommand> getCommands(
     List<String> args,
