@@ -1,6 +1,6 @@
 name: rps
 description: rps (Run Pubspec Script) allows you to define and run scripts from pubspec.yaml.
-version: 0.8.0-dev.2
+version: 0.9.0-dev.1
 repository: https://github.com/gonuit/rps
 homepage: https://github.com/gonuit/rps
 issue_tracker: https://github.com/gonuit/rps/issues
@@ -18,6 +18,7 @@ dependencies:
   meta: ^1.11.0
   http_api: ^0.9.0
   pub_semver: ^2.1.4
+  collection: ^1.18.0
 
 dev_dependencies:
   flutter_lints: ^2.0.1
