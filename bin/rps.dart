@@ -15,19 +15,17 @@ void main(List<String> args) async {
 
   try {
     final package = await RpsPackage.load();
-    if (true) {
-      try {
-        final versions = await package.getVersions();
-        if (versions.hasUpdate || true) {
-          console.writeBordered([
-            'Update available ${gray(versions.current.toString())} → ${green(versions.latest.toString())}',
-            'Run ${lightBlue('dart pub global activate rps')} to update',
-          ]);
-          await Future.delayed(const Duration(seconds: 2));
-        }
-      } on Exception {
-        // ignore
+    try {
+      final versions = await package.getVersions();
+      if (versions.hasUpdate) {
+        console.writeBordered([
+          'Update available ${gray(versions.current.toString())} → ${green(versions.latest.toString())}',
+          'Run ${lightBlue('dart pub global activate rps')} to update',
+        ]);
+        await Future.delayed(const Duration(seconds: 2));
       }
+    } on Exception {
+      // ignore
     }
 
     Pubspec loadPubspec() => Pubspec.load(Directory.current);
