@@ -9,12 +9,13 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [🔗 References](#references) 
 - [🪝 Hooks](#hooks) 
 - [💻 Platform specific scripts](#platform-specific-scripts) 
+- [🎯 Positional arguments](#positional-arguments)
 
 ## Quick start 🚀
 
 1. Install this package.
     ```bash
-    dart pub global activate rps --version 0.7.0-dev.6
+    dart pub global activate rps --version 0.9.0-dev.1
     ```
 2. Define scripts inside the pubspec.yaml
       ```yaml
@@ -57,9 +58,9 @@ rps build android apk
 
 ## 🔗 References
 
-Sometimes you may want to create a command alias (e.g. a shorter version of it) or simply pass the execution of a hook to another command. This is where references come to the rescue! ⛑
+Sometimes you may want to create a command alias (eg. a shorter version of it) or simply pass the execution of a hook to another command. This is where references come to the rescue! ⛑
 
-References are defined as a scripts that must begin with `$` sign.
+References are defined as a scripts that must begin with `rps` prefix.
 
 ```yaml
 scripts:
@@ -67,8 +68,9 @@ scripts:
     build: flutter pub run build_runner build --delete-conflicting-outputs
     watch: flutter pub run build_runner watch --delete-conflicting-outputs
   # short aliases:
-  gb: $generator build # same as "rps run generator build"
-  gw: $generator watch # same as "rps run generator watch"
+  gb: rps generator build
+  # They will not trigger an additional rps process.
+  gw: rps generator watch
 ```
 
 References can also be used with `$before` and `$after` hooks.
@@ -144,6 +146,23 @@ You are on MacOs!
 ```
 
 This can be useful for commands like `rm -rf`, which in Windows.... `rd /s /q`, you know what I mean, it can be helpful, right?
+
+## 🎯 Positional arguments
+
+Arguments can be passed by adding to the command the － simple, but sometimes it is useful to give them in a specific place, here positional arguments come to the rescue.
+
+Positional arguments are defined as numbers in parentheses: `${0}`, `${1}`, `${3}` and so on....
+
+For example, you can use the following command to specify the target to be built.
+
+```yaml
+scripts:
+  build: flutter build ${0} -t lib/main.dart --release
+```
+
+Now just run `rps build apk`.  
+
+You can still add trailing arguments, such as `rps build apk --flavor funny` what will execute the following command `flutter build apk -t lib/main.dart --release --flavor funny`.
 
 ## 🔎 Overview example
 
