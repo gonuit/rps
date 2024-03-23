@@ -1,5 +1,13 @@
-## 0.8.0-dev.3
-- Experimental support for positional arguments
+## 0.8.0
+### BREAKING CHANGES
+- Support for positional arguments: `${0}`, `${1}` ...
+- To use references use `rps` instead of `$` prefix.
+### Additional changes
+- Added list command: `rps ls`
+  - Lists all available commands
+- Added upgrade command: `rps -u` / `rps --upgrade`
+- Improved help command `rps -h` / `rps --help`
+- Updated readme documentation.
 ## 0.7.0
 
 ### BREAKING CHANGES

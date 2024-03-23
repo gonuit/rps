@@ -5,17 +5,18 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 
 ## Features 
 <!-- no toc -->
-- [🪆 Nesting](#nesting) 
-- [🔗 References](#references) 
-- [🪝 Hooks](#hooks) 
-- [💻 Platform specific scripts](#platform-specific-scripts) 
-- [🎯 Positional arguments](#positional-arguments)
+- [🔦 Listing commands](#-listing-commands)
+- [🪆 Nesting](#-nesting)
+- [🔗 References](#-references)
+- [🪝 Hooks](#-hooks)
+- [💻 Platform specific scripts](#-platform-specific-scripts)
+- [🎯 Positional arguments](#-positional-arguments)
 
 ## Quick start 🚀
 
 1. Install this package.
     ```bash
-    dart pub global activate rps --version 0.8.0-dev.3
+    dart pub global activate rps --version 0.8.0
     ```
 2. Define scripts inside the pubspec.yaml
       ```yaml
@@ -33,6 +34,31 @@ RPS is a dart script manager that allows you to define and use scripts from the 
     Less time typing long commands more time watching funny cats. 🐈
 
 # Features
+
+## 🔦 Listing commands
+
+Not sure what command to choose? Add a description to your scripts:
+
+```yaml
+scripts:
+  build:
+    web: 
+      $script: flutter build web --flavor production -t lib/main.dart
+      $description: Builds a web application
+    android:
+      $script: flutter build apk --flavor production -t lib/main.dart
+      $description: Builds an Android app
+```
+
+Then type `rps ls` to preview all of them:
+
+```
+Commands:
+  build web (flutter build web --flavor production -t lib/main.dart)
+    Builds a web application
+  build android (flutter build apk --flavor production -t lib/main.dart)
+    Builds an Android app
+```
 
 ## 🪆 Nesting
 
