@@ -120,7 +120,7 @@ class _ScriptParser implements ScriptsParser {
       return;
     } else if (current is String) {
       if (context.isRoot) {
-        // TODO: Load file with scripts
+        // todo Load file with scripts
         throw RpsException(
           'The root key "scripts" cannot contain commands.',
         );

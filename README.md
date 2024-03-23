@@ -15,7 +15,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 
 1. Install this package.
     ```bash
-    dart pub global activate rps --version 0.9.0-dev.1
+    dart pub global activate rps --version 0.8.0-dev.2
     ```
 2. Define scripts inside the pubspec.yaml
       ```yaml
