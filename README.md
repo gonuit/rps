@@ -15,7 +15,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 
 1. Install this package.
     ```bash
-    dart pub global activate rps --version 0.8.0-dev.2
+    dart pub global activate rps --version 0.8.0-dev.3
     ```
 2. Define scripts inside the pubspec.yaml
       ```yaml
@@ -149,7 +149,7 @@ This can be useful for commands like `rm -rf`, which in Windows.... `rd /s /q`, 
 
 ## 🎯 Positional arguments
 
-Arguments can be passed by adding to the command the － simple, but sometimes it is useful to give them in a specific place, here positional arguments come to the rescue.
+Arguments can be passed by adding them to the end of the command － simple, but sometimes it is useful to give them in a specific place, here positional arguments come to the rescue.
 
 Positional arguments are defined as numbers in parentheses: `${0}`, `${1}`, `${3}` and so on....
 
@@ -190,9 +190,9 @@ scripts:
       appbundle: "flutter build --release appbundle --flavor production"
       # and so on...
   # too long command? no problem! define alias using reference syntax!
-  bab: $build android appbundle
+  bab: rps build android appbundle
   # as simple as typing "rps baa"
-  baa: $build android apk
+  baa: rps build android apk
   # some commands may vary from platform to platform
   # but that's not a problem
   clear:
