@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:rps/rps.dart';
-import 'package:rps/src/bindings/execute.dart' as bindings;
+import 'package:collection/collection.dart';
 import 'package:rps/src/cli/commands/command.dart';
 
 class RunCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
+  final ExecuteFunction execute;
 
   RunCommand({
+    required this.execute,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
   }) : _getScriptsSource = getScriptsSource;
 
@@ -33,33 +35,43 @@ class RunCommand implements Command {
 
     final List<ExecutionEvent> events;
     try {
-      events = parser.getCommandsToExecute(arguments);
+      /// Remove command name (run) from arguments list
+      events = parser.getCommandsToExecute(arguments.firstOrNull == name ? arguments.skip(1).toList() : arguments);
     } on ScriptParserException catch (err) {
       throw RpsException(err.message, err);
     }
 
     if (events.isEmpty) {
       throw RpsException(
-        'Missing script. Command: "${arguments.join(' ')}" '
-        'is not a full path.',
+        'Missing script. Command: "${arguments.join(' ')}".',
       );
     }
 
     for (final event in events) {
       if (event is CommandExecuted) {
-        console.writeln('${boldGreen('>')} ${event.context.basePath.join(' ')}');
-        console.writeln('${boldGreen(r'$')} ${bold(event.command)}\n');
-        final exitCode = await bindings.execute(event.command);
+        final basePath = event.context.basePath;
+        if (event.isHook) {
+          basePath.last = blue(basePath.last.substring(1));
+        }
+        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
+        final command = event.compile();
+        console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
+        final exitCode = await execute(command);
 
         if (exitCode > 0) {
           throw RpsException('Command ended with a non zero exit code.');
         }
         console.writeln();
       } else if (event is CommandReferenced) {
+        final basePath = event.context.basePath;
+        if (event.isHook) {
+          basePath.last = blue(basePath.last.substring(1));
+        }
+        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
         console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
       } else if (event is HookExecuted) {
-        final basePath = event.context.basePath;
-        console.writeln('${boldGreen('>')} ${basePath.sublist(0, basePath.length - 1).join(' ')} ${blue(event.name)}');
+        // final basePath = event.context.basePath;
+        // console.writeln('${boldGreen('>')} ${basePath.sublist(0, basePath.length - 1).join(' ')} ${blue(event.name)}');
       }
     }
 

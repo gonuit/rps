@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 
 typedef ExecuteNative = Int32 Function(Pointer<Utf8> command);
 typedef Execute = int Function(Pointer<Utf8> command);
+typedef ExecuteFunction = Future<int> Function(String command);
 
 Future<int> execute(String command) async {
   const rootLibrary = 'package:rps/rps.dart';

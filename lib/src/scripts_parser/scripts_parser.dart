@@ -114,7 +114,6 @@ class _ScriptParser implements ScriptsParser {
     required List<String> arguments,
   }) sync* {
     final current = context.current;
-    final remainingArguments = arguments.skip(1).toList();
 
     if (current == null) {
       // no command
@@ -129,7 +128,7 @@ class _ScriptParser implements ScriptsParser {
         yield* _handleCommand(
           command: current,
           context: context,
-          arguments: remainingArguments,
+          arguments: arguments,
         );
       }
     } else if (current is Map) {
@@ -141,7 +140,7 @@ class _ScriptParser implements ScriptsParser {
             yield* _handleCommand(
               command: script,
               context: context,
-              arguments: remainingArguments,
+              arguments: arguments,
             );
           } else if (script is Map) {
             final platformKey = '\$${Platform.operatingSystem}';
@@ -157,7 +156,7 @@ class _ScriptParser implements ScriptsParser {
               yield* _handleCommand(
                 command: command,
                 context: context,
-                arguments: remainingArguments,
+                arguments: arguments,
               );
             }
           }
@@ -169,6 +168,7 @@ class _ScriptParser implements ScriptsParser {
               'is not a full path.',
             );
           } else {
+            final remainingArguments = arguments.skip(1).toList();
             yield* _getCommandsToExecute(
               context: context.next(nextKey),
               arguments: remainingArguments,
@@ -198,6 +198,7 @@ class _ScriptParser implements ScriptsParser {
         name: 'before',
       );
       yield* _handleCommand(
+        isHook: true,
         command: beforeHook,
         context: hookContext,
         // arguments are not passed to to the hooks
@@ -220,6 +221,7 @@ class _ScriptParser implements ScriptsParser {
         context: hookContext,
         // arguments are not passed to to the hooks
         arguments: null,
+        isHook: true,
       );
     }
   }
@@ -228,6 +230,7 @@ class _ScriptParser implements ScriptsParser {
     required Context context,
     required String command,
     List<String>? arguments,
+    bool isHook = false,
   }) sync* {
     if (command.startsWith(r'rps ')) {
       final referencedCommand = command.substring(4);
@@ -236,6 +239,7 @@ class _ScriptParser implements ScriptsParser {
         command: referencedCommand,
         context: context,
         label: context.key!,
+        isHook: isHook,
       );
 
       /// Ref should start from root.
@@ -256,11 +260,12 @@ class _ScriptParser implements ScriptsParser {
         command: command,
         context: context,
         arguments: arguments,
+        isHook: isHook,
       );
     }
   }
 
   bool _hasScriptKey(Map scripts) {
-    return scripts.keys.any((key) => key == ScriptsParser.scriptKey);
+    return scripts.containsKey(ScriptsParser.scriptKey);
   }
 }
