@@ -11,10 +11,13 @@ class CommandReferenced extends ExecutionEvent {
   @override
   final String command;
 
+  final bool isHook;
+
   CommandReferenced({
     required this.context,
     required this.command,
     required this.label,
+    this.isHook = false,
   });
 
   @override

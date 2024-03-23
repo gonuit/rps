@@ -7,6 +7,7 @@ import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/utils/rps_package.dart';
+import 'package:rps/src/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
 
 void main(List<String> args) async {
@@ -37,7 +38,10 @@ void main(List<String> args) async {
       console: console,
       commands: [
         LsCommand(getScriptsSource: loadPubspec),
-        RunCommand(getScriptsSource: loadPubspec),
+        RunCommand(
+          getScriptsSource: loadPubspec,
+          execute: bindings.execute,
+        ),
       ],
       options: [
         help,

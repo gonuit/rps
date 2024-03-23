@@ -61,6 +61,11 @@ class BorderCharacters {
   }
 }
 
+String removeAnsiEscapeSequences(String input) {
+  final ansiEscapePattern = RegExp(r'\x1B\[[0-9;]*[a-zA-Z]');
+  return input.replaceAll(ansiEscapePattern, '');
+}
+
 enum Alignment { left, center, right }
 
 class Console implements StringSink {
@@ -69,10 +74,6 @@ class Console implements StringSink {
   Console({required StringSink sink}) : _sink = sink;
 
   /// Function to remove ANSI escape sequences from a string
-  String removeAnsiEscapeSequences(String input) {
-    final ansiEscapePattern = RegExp(r'\x1B\[[0-9;]*[a-zA-Z]');
-    return input.replaceAll(ansiEscapePattern, '');
-  }
 
   /// Function to calculate the visible length of a string (excluding ANSI escape sequences)
   int visibleLength(String input) {

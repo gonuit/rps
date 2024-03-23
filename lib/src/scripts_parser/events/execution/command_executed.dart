@@ -16,13 +16,31 @@ class CommandExecuted extends ExecutionEvent {
 
   final String? error;
 
+  final bool isHook;
+
   static final _positionalArgumentsRegexp = RegExp(r'\$\{\s{0,}[0-9]+\s{0,}\}');
+
+  CommandExecuted({
+    required this.command,
+    required this.context,
+    List<String>? arguments,
+    this.description,
+    this.isHook = false,
+    this.error,
+  }) : arguments = arguments ?? const [];
 
   /// Compiles the command. Returns the command ready for execution.
   String compile() {
     final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
 
     if (argumentsInCommand.isNotEmpty) {
+      if (isHook) {
+        throw RpsException(
+          'The script "$path" defines a positional argument(s), '
+          'but hooks do not support positional arguments.',
+        );
+      }
+
       final usedArguments = <int>{};
       final filledCommand = command.replaceAllMapped(
         _positionalArgumentsRegexp,
@@ -62,14 +80,6 @@ class CommandExecuted extends ExecutionEvent {
       return [command, ...arguments].join(' ');
     }
   }
-
-  CommandExecuted({
-    required this.command,
-    required this.context,
-    List<String>? arguments,
-    this.description,
-    this.error,
-  }) : arguments = arguments ?? const [];
 
   @override
   bool operator ==(Object other) {
