@@ -239,6 +239,17 @@ dependencies:
   path: ^1.7.0
 ```
 
+___
+
+## Supported platforms
+
+| Platform |  x64  | Arm64 |
+| :------- | :---: | :---: |
+| Linux    |   ✅   |   ✅   |
+| Windows  |   ✅   |   ❌   |
+| MacOs    |   ✅   |   ✅   |
+
+
 ---
 
 ## 📈 Motivation

@@ -1,3 +1,6 @@
+## 0.8.1
+- Added support for Linux Arm64 (aarch64) architecture.
+- Improved Abi handling
 ## 0.8.0
 ### BREAKING CHANGES
 - Support for positional arguments: `${0}`, `${1}` ...
