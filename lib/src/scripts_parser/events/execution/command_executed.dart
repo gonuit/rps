@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'dart:math' as math;
 
@@ -28,6 +29,21 @@ class CommandExecuted extends ExecutionEvent {
     this.isHook = false,
     this.error,
   }) : arguments = arguments ?? const [];
+
+  /// Escape backslashes, single and double quotes for shell safety
+  /// and enclose in quotes only if necessary: contains spaces or quotes
+  String? _serializeArguments(List<String> arguments) {
+    if (arguments.isEmpty) return null;
+
+    return arguments.map((arg) {
+      String escaped = arg.replaceAll(r'\', r'\\').replaceAll('"', r'\"').replaceAll("'", r"\'");
+
+      if (escaped != arg) {
+        return '"$escaped"';
+      }
+      return escaped;
+    }).join(' ');
+  }
 
   /// Compiles the command. Returns the command ready for execution.
   String compile() {
@@ -75,9 +91,9 @@ class CommandExecuted extends ExecutionEvent {
         );
       }
 
-      return [filledCommand, ...arguments.sublist(lastUsed + 1)].join(' ');
+      return [filledCommand, _serializeArguments(arguments.sublist(lastUsed + 1))].whereNotNull().join(' ');
     } else {
-      return [command, ...arguments].join(' ');
+      return [command, _serializeArguments(arguments)].whereNotNull().join(' ');
     }
   }
 
