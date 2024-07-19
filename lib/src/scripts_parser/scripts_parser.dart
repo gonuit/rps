@@ -53,13 +53,15 @@ class _ScriptParser implements ScriptsParser {
           );
         } else if (script is Map) {
           final platformKey = '\$${Platform.operatingSystem}';
-          final command = script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
+          final command =
+              script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
           if (command is! String) {
             yield CommandExecuted(
               command: '-',
               context: context,
               description: description,
-              error: 'No platform script key for the command: "${context.path}". '
+              error:
+                  'No platform script key for the command: "${context.path}". '
                   'Consider adding the key for the current '
                   'platform: "$platformKey" or the default script '
                   'key: "${ScriptsParser.defaultScriptKey}".',
@@ -97,11 +99,15 @@ class _ScriptParser implements ScriptsParser {
     }
 
     final events = <ExecutionEvent>{};
-    for (final event in _getCommandsToExecute(context: context, arguments: arguments)) {
+    for (final event
+        in _getCommandsToExecute(context: context, arguments: arguments)) {
       final added = events.add(event);
       if (!added) {
         throw ScriptParserException(
-          'Script cycle detected: ${[...events.map((e) => e.path), event.path].join(' → ')}',
+          'Script cycle detected: ${[
+            ...events.map((e) => e.path),
+            event.path
+          ].join(' → ')}',
         );
       }
     }
@@ -144,7 +150,8 @@ class _ScriptParser implements ScriptsParser {
             );
           } else if (script is Map) {
             final platformKey = '\$${Platform.operatingSystem}';
-            final command = script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
+            final command =
+                script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
             if (command is! String) {
               throw RpsException(
                 'No platform script key for the command: "${context.path}". '

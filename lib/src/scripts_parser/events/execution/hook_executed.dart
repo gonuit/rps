@@ -19,7 +19,10 @@ class HookExecuted extends ExecutionEvent {
 
   @override
   bool operator ==(Object other) {
-    return other is HookExecuted && other.command == command && other.path == path && other.name == name;
+    return other is HookExecuted &&
+        other.command == command &&
+        other.path == path &&
+        other.name == name;
   }
 
   @override

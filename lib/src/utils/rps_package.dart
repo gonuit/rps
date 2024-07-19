@@ -131,8 +131,12 @@ class RpsConfigData {
 
   static RpsConfigData fromJson(Map<String, dynamic> json) {
     return RpsConfigData(
-      updateCheckedAt: json['updateCheckedAt'] != null ? DateTime.parse(json['updateCheckedAt']) : null,
-      latestVersion: json['latestVersion'] != null ? Version.parse(json['latestVersion']) : null,
+      updateCheckedAt: json['updateCheckedAt'] != null
+          ? DateTime.parse(json['updateCheckedAt'])
+          : null,
+      latestVersion: json['latestVersion'] != null
+          ? Version.parse(json['latestVersion'])
+          : null,
     );
   }
 
@@ -187,7 +191,9 @@ class RpsPackage {
     final now = DateTime.now();
 
     // Return cached if valid
-    if (cachedVersion != null && cacheDate != null && cacheDate.isSameDay(now)) {
+    if (cachedVersion != null &&
+        cacheDate != null &&
+        cacheDate.isSameDay(now)) {
       return cachedVersion;
     }
 
@@ -201,7 +207,8 @@ class RpsPackage {
   }
 
   Future<PackageVersions> getVersions() async {
-    final latest = await getLatestPackageVersion().timeout(const Duration(milliseconds: 300));
+    final latest = await getLatestPackageVersion()
+        .timeout(const Duration(milliseconds: 300));
 
     return PackageVersions(
       latest: latest,

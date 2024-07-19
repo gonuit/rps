@@ -112,7 +112,8 @@ void main() {
     });
 
     test('Correctly executes nested hooks', () async {
-      final exitCode = await run.run(Console(sink: consoleSink), ['hook-2', 'hook-2-nested']);
+      final exitCode = await run
+          .run(Console(sink: consoleSink), ['hook-2', 'hook-2-nested']);
       expect(exitCode, equals(0));
       expect(
         executions,
@@ -234,7 +235,8 @@ void main() {
       );
     });
 
-    test('Correctly pass additional arguments and options to nested scripts', () async {
+    test('Correctly pass additional arguments and options to nested scripts',
+        () async {
       final exitCode = await run.run(
         Console(sink: consoleSink),
         ['echo-args-nested', 'echo', '123', '-v', '--help'],
@@ -349,7 +351,8 @@ void main() {
       );
     });
 
-    test('Throw error when positional arguments are passed to hooks.', () async {
+    test('Throw error when positional arguments are passed to hooks.',
+        () async {
       RpsException? exception;
       try {
         await run.run(

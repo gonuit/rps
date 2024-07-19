@@ -22,7 +22,10 @@ class CommandReferenced extends ExecutionEvent {
 
   @override
   bool operator ==(Object other) {
-    return other is CommandReferenced && other.command == command && other.path == path && other.label == label;
+    return other is CommandReferenced &&
+        other.command == command &&
+        other.path == path &&
+        other.label == label;
   }
 
   @override

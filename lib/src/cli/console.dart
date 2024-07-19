@@ -103,7 +103,8 @@ class Console implements StringSink {
     }
 
     final lineLengths = lines.map((line) => visibleLength(line)).toList();
-    final maxLength = lineLengths.fold(0, (prevLength, length) => math.max(length, prevLength));
+    final maxLength = lineLengths.fold(
+        0, (prevLength, length) => math.max(length, prevLength));
     final horizontalLength = maxLength + horizontalPadding * 2;
 
     writeln(border.getTopBorder(horizontalLength));
@@ -136,7 +137,8 @@ class Console implements StringSink {
           paddingEnd = horizontalPadding;
           break;
       }
-      writeln('${border.left}${border.empty * paddingStart}$line${border.empty * paddingEnd}${border.right}');
+      writeln(
+          '${border.left}${border.empty * paddingStart}$line${border.empty * paddingEnd}${border.right}');
     }
     for (int y = 0; y < verticalPadding; y++) {
       writeln(border.getEmptyLine(horizontalLength));

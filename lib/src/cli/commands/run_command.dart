@@ -14,7 +14,8 @@ class RunCommand implements Command {
   }) : _getScriptsSource = getScriptsSource;
 
   @override
-  String get description => 'This runs an arbitrary command from a pubspec\'s "scripts" object. '
+  String get description =>
+      'This runs an arbitrary command from a pubspec\'s "scripts" object. '
       'If no "command" is provided, it will list the available scripts.';
 
   @override
@@ -36,7 +37,9 @@ class RunCommand implements Command {
     final List<ExecutionEvent> events;
     try {
       /// Remove command name (run) from arguments list
-      events = parser.getCommandsToExecute(arguments.firstOrNull == name ? arguments.skip(1).toList() : arguments);
+      events = parser.getCommandsToExecute(arguments.firstOrNull == name
+          ? arguments.skip(1).toList()
+          : arguments);
     } on ScriptParserException catch (err) {
       throw RpsException(err.message, err);
     }

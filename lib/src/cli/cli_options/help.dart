@@ -26,7 +26,8 @@ class HelpOption extends CliOption {
   @override
   Future<void> run(Cli cli, Console console, List<String> arguments) async {
     console
-      ..writeln('${bold('Run Pubspec Script')} (${boldGreen('rps')}) ${bold("v${package.version}")}')
+      ..writeln(
+          '${bold('Run Pubspec Script')} (${boldGreen('rps')}) ${bold("v${package.version}")}')
       ..writeln();
     // ..writeln('${bold('Options')}:')
     // ..writeln('  -v, --version - prints version.')
@@ -40,7 +41,8 @@ class HelpOption extends CliOption {
         final short = option.short;
 
         if (short != null) {
-          console.writeln('  -${option.short}, --${option.name} - ${option.description}');
+          console.writeln(
+              '  -${option.short}, --${option.name} - ${option.description}');
         } else {
           console.writeln('      --${option.name} - ${option.description}');
         }
@@ -51,7 +53,8 @@ class HelpOption extends CliOption {
     if (commands.isNotEmpty) {
       console.writeln('${bold('Commands')}:');
       for (final command in commands) {
-        console.writeln('  ${command.tooltip ?? command.name} - ${command.description}');
+        console.writeln(
+            '  ${command.tooltip ?? command.name} - ${command.description}');
       }
     }
 

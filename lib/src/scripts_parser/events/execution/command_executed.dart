@@ -36,7 +36,10 @@ class CommandExecuted extends ExecutionEvent {
     if (arguments.isEmpty) return null;
 
     return arguments.map((arg) {
-      String escaped = arg.replaceAll(r'\', r'\\').replaceAll('"', r'\"').replaceAll("'", r"\'");
+      String escaped = arg
+          .replaceAll(r'\', r'\\')
+          .replaceAll('"', r'\"')
+          .replaceAll("'", r"\'");
 
       if (escaped != arg) {
         return '"$escaped"';
@@ -83,7 +86,8 @@ class CommandExecuted extends ExecutionEvent {
 
       final lastUsed = usedArguments.reduce(math.max);
       if (lastUsed > usedArguments.length) {
-        final unusedArguments = List<int>.generate(lastUsed, (index) => index).where((e) => !usedArguments.contains(e));
+        final unusedArguments = List<int>.generate(lastUsed, (index) => index)
+            .where((e) => !usedArguments.contains(e));
 
         throw RpsException(
           'The script defines unused positional argument(s): '
@@ -91,7 +95,10 @@ class CommandExecuted extends ExecutionEvent {
         );
       }
 
-      return [filledCommand, _serializeArguments(arguments.sublist(lastUsed + 1))].whereNotNull().join(' ');
+      return [
+        filledCommand,
+        _serializeArguments(arguments.sublist(lastUsed + 1))
+      ].whereNotNull().join(' ');
     } else {
       return [command, _serializeArguments(arguments)].whereNotNull().join(' ');
     }
@@ -99,7 +106,9 @@ class CommandExecuted extends ExecutionEvent {
 
   @override
   bool operator ==(Object other) {
-    return other is CommandExecuted && other.command == command && other.path == path;
+    return other is CommandExecuted &&
+        other.command == command &&
+        other.path == path;
   }
 
   @override

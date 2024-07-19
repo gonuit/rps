@@ -22,11 +22,13 @@ class Cli {
 
   Future<void> run(List<String> arguments) async {
     try {
-      final option = options.firstWhereOrNull((option) => option.match(arguments));
+      final option =
+          options.firstWhereOrNull((option) => option.match(arguments));
       if (option != null) {
         return option.run(this, console, arguments);
       }
-      final command = commands.firstWhereOrNull((command) => command.match(arguments));
+      final command =
+          commands.firstWhereOrNull((command) => command.match(arguments));
       if (command != null) {
         return command.run(console, arguments);
       }

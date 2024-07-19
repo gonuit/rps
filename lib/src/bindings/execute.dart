@@ -40,7 +40,8 @@ Future<int> execute(
   }
 
   if (libraryName == null) {
-    throw RpsException('Current platform ($platform) is currently not supported.');
+    throw RpsException(
+        'Current platform ($platform) is currently not supported.');
   }
 
   final root = path.fromUri(uri.resolve(path.join('..', 'native')).path);
