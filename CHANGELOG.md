@@ -1,3 +1,5 @@
+## 0.8.2
+- Fix arguments serialization. escape backslashes, single and double quotes for shell safety and enclose in quotes if necessary: contains spaces or quotes.
 ## 0.8.1
 - Added support for Linux Arm64 (aarch64) architecture.
 - Improved Abi handling
