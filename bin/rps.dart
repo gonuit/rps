@@ -6,6 +6,7 @@ import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
+import 'package:rps/src/scripts.dart';
 import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/src/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
@@ -28,16 +29,22 @@ void main(List<String> args) async {
       // ignore
     }
 
-    Pubspec loadPubspec() => Pubspec.load(Directory.current);
+    ScriptsSource load() {
+      try {
+        return ScriptsYaml.load(Directory.current);
+      } catch (e) {
+        return Pubspec.load(Directory.current);
+      }
+    }
 
     final help = HelpOption(console: console, package: package);
     final cli = Cli(
       package: package,
       console: console,
       commands: [
-        LsCommand(getScriptsSource: loadPubspec),
+        LsCommand(getScriptsSource: load),
         RunCommand(
-          getScriptsSource: loadPubspec,
+          getScriptsSource: load,
           execute: bindings.execute,
         ),
       ],
