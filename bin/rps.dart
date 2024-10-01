@@ -5,7 +5,7 @@ import 'package:rps/src/cli/cli_options/help.dart';
 import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
-import 'package:rps/src/cli/commands/no_command.dart';
+import 'package:rps/src/cli/commands/script_selection.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/src/bindings/execute.dart' as bindings;
@@ -43,7 +43,7 @@ void main(List<String> args) async {
       package: package,
       console: console,
       commands: [
-        NoCommand(
+        ScriptSelectionCommand(
           getScriptsSource: loadScriptSource,
           execute: bindings.execute,
         ),

@@ -9,6 +9,16 @@ abstract class ScriptsParser {
   static const descriptionKey = r'$description';
   static const defaultScriptKey = r'$default';
 
+  static isSpecialKey(String key) => switch (key) {
+        scriptKey ||
+        beforeKey ||
+        afterKey ||
+        descriptionKey ||
+        defaultScriptKey =>
+          true,
+        _ => false,
+      };
+
   List<CommandExecuted> listCommands();
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments);
 
@@ -35,7 +45,9 @@ class _ScriptParser implements ScriptsParser {
     if (current is String) {
       if (context.isRoot) {
         // todo: load file with scripts
-      } else {
+        /// Do not consider hooks
+      } else if (context.key == ScriptsParser.scriptKey ||
+          (context.key != null && !ScriptsParser.isSpecialKey(context.key!))) {
         yield CommandExecuted(
           command: current,
           context: context,

@@ -4,11 +4,11 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 import 'package:prompts/prompts.dart' as prompts;
 
-class NoCommand implements Command {
+class ScriptSelectionCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
   final ExecuteFunction execute;
 
-  NoCommand({
+  ScriptSelectionCommand({
     required this.execute,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
   }) : _getScriptsSource = getScriptsSource;
@@ -32,7 +32,7 @@ class NoCommand implements Command {
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source);
-    final commands = parser.listCommands().toList();
+    final commands = parser.listCommands().where((c) => !c.isHook).toList();
 
     final selected = selectCommand(console, commands);
     if (selected == null) {
@@ -72,7 +72,7 @@ CommandExecuted? selectCommand(
   Console console,
   List<CommandExecuted> commands,
 ) {
-  console.writeln('\n${bold('Select script to run')}:');
+  console.writeln('\n${bold('Which scripts do you want to run?')}');
   for (int i = 0; i < commands.length; i++) {
     final command = commands[i];
     console
