@@ -53,8 +53,13 @@ class HelpOption extends CliOption {
     if (commands.isNotEmpty) {
       console.writeln('${bold('Commands')}:');
       for (final command in commands) {
-        console.writeln(
-            '  ${command.tooltip ?? command.name} - ${command.description}');
+        if (command.name != null) {
+          console.writeln(
+              '  ${command.tooltip ?? command.name} - ${command.description}');
+        } else {
+          console.writeln(
+              '  ${command.description}');
+        }
       }
     }
 

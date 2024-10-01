@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 
-class LsCommand extends Command {
+class LsCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
   LsCommand({
@@ -37,10 +37,11 @@ class LsCommand extends Command {
           ..write(lightBlue(command.path))
           ..write(' ')
           ..writeln('(${gray(command.command)})');
-        if (command.error != null) {
+        final errorMessage = command.errorMessage;
+        if (errorMessage != null) {
           console
             ..write('    ')
-            ..writeln(red(command.error!));
+            ..writeln(red(errorMessage));
         }
         if (command.description != null) {
           console

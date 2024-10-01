@@ -22,7 +22,7 @@ class RunCommand implements Command {
   String get name => 'run';
 
   @override
-  String? get tooltip => 'run <pubspec script> [arguments]';
+  String get tooltip => 'run <pubspec script> [arguments]';
 
   @override
   bool match(List<String> arguments) {

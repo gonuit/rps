@@ -168,8 +168,7 @@ class RpsPackage {
       const rootLibrary = 'package:rps/rps.dart';
       final uri = await Isolate.resolvePackageUri(Uri.parse(rootLibrary));
       if (uri == null) {
-        print('Library cannot be loaded.');
-        exit(1);
+        throw RpsException('Library cannot be loaded.');
       }
 
       final root = uri.resolve('..');

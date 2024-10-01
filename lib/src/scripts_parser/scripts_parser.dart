@@ -60,11 +60,12 @@ class _ScriptParser implements ScriptsParser {
               command: '-',
               context: context,
               description: description,
-              error:
-                  'No platform script key for the command: "${context.path}". '
-                  'Consider adding the key for the current '
-                  'platform: "$platformKey" or the default script '
-                  'key: "${ScriptsParser.defaultScriptKey}".',
+              errors: [
+                'No platform script key for the command: "${context.path}". '
+                    'Consider adding the key for the current '
+                    'platform: "$platformKey" or the default script '
+                    'key: "${ScriptsParser.defaultScriptKey}".',
+              ],
             );
           } else {
             yield CommandExecuted(
@@ -83,8 +84,10 @@ class _ScriptParser implements ScriptsParser {
       yield CommandExecuted(
         command: current.toString(),
         context: context,
-        error: 'Invalid command. Cannot use type '
-            '${current.runtimeType} ($current) as a command.',
+        errors: [
+          'Invalid command. Cannot use type '
+              '${current.runtimeType} ($current) as a command.',
+        ],
       );
     }
   }
