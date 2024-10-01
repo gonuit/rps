@@ -6,7 +6,6 @@ import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
-import 'package:rps/src/scripts.dart';
 import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/src/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
@@ -29,10 +28,11 @@ void main(List<String> args) async {
       // ignore
     }
 
-    ScriptsSource load() {
-      try {
-        return ScriptsYaml.load(Directory.current);
-      } catch (e) {
+    ScriptsSource loadScriptSource() {
+      final cur = Directory.current;
+      if (RpsYaml.exists(cur)) {
+        return RpsYaml.load(Directory.current);
+      } else {
         return Pubspec.load(Directory.current);
       }
     }
@@ -42,9 +42,9 @@ void main(List<String> args) async {
       package: package,
       console: console,
       commands: [
-        LsCommand(getScriptsSource: load),
+        LsCommand(getScriptsSource: loadScriptSource),
         RunCommand(
-          getScriptsSource: load,
+          getScriptsSource: loadScriptSource,
           execute: bindings.execute,
         ),
       ],

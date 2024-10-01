@@ -1,3 +1,5 @@
+## 0.9.0
+- Added support for an external script file (`rps.yaml`), thanks to [@masreplay](https://github.com/masreplay) in [#24](https://github.com/gonuit/rps/pull/24).
 ## 0.8.2
 - Fix arguments serialization. escape backslashes, single and double quotes for shell safety and enclose in quotes if necessary: contains spaces or quotes.
 ## 0.8.1

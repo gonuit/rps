@@ -3,6 +3,7 @@
 .packages
 .DS_Store
 .vscode/
+rps.yaml
 
 # Conventional directory for build outputs
 build/

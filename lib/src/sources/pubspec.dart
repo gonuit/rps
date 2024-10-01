@@ -17,7 +17,7 @@ class Pubspec implements ScriptsSource {
     final pubspecFile = directory.listSync().whereType<File>().firstWhere(
           isPubspecFile,
           orElse: () => throw RpsException(
-            'Cannot find pubspec.yaml file in the current directory '
+            'Cannot find $filename file in the current directory '
             '(${Directory.current.path}).',
           ),
         );
@@ -39,7 +39,7 @@ class Pubspec implements ScriptsSource {
   dynamic getScripts() {
     dynamic scripts = parsed['scripts'];
     if (scripts == null) {
-      throw RpsException('Missing "scripts" field in the pubspec.yaml file.');
+      throw RpsException('Missing "scripts" field in the $filename file.');
     }
     return scripts;
   }

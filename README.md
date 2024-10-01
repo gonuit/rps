@@ -11,14 +11,15 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [🪝 Hooks](#-hooks)
 - [💻 Platform specific scripts](#-platform-specific-scripts)
 - [🎯 Positional arguments](#-positional-arguments)
+- [📝 External scripts file](#-external-scripts-file)
 
 ## Quick start 🚀
 
 1. Install this package.
     ```bash
-    dart pub global activate rps --version 0.8.0
+    dart pub global activate rps
     ```
-2. Define scripts inside the pubspec.yaml
+2. Define scripts inside the `pubspec.yaml` or create an [`rps.yaml` file]((#-external-scripts-file)).
       ```yaml
       scripts:
         gen: flutter pub run build_runner build --delete-conflicting-outputs
@@ -189,6 +190,30 @@ scripts:
 Now just run `rps build apk`.  
 
 You can still add trailing arguments, such as `rps build apk --flavor funny` what will execute the following command `flutter build apk -t lib/main.dart --release --flavor funny`.
+
+## 📝 External scripts file
+
+If you prefer to keep your scripts separate from your `pubspec.yaml`, you can define them in an external **`rps.yaml`** file. When an `rps.yaml` file is present in your project's root directory, rps will use it as the scripts source **instead of the scripts in `pubspec.yaml`**.
+
+To use an external scripts file:
+1. Create an `rps.yaml` file in the root of your project.
+2. Define your scripts under the `scripts` key, just like you would in `pubspec.yaml`.
+    ```yaml
+    scripts:
+      clean:
+        $script:
+          $default: rm -rf ./build
+          $windows: rd /s /q build
+      build:
+        release: flutter build apk --release
+        debug: flutter build apk --debug
+    ```
+3. Run your scripts using rps as usual:
+    ```bash
+    rps clean
+    rps build release
+    ```
+Using `rps.yaml` allows you to keep your `pubspec.yaml` file focused on dependencies and package configuration, while managing your scripts in a dedicated file.
 
 ## 🔎 Overview example
 
