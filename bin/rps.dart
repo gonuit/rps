@@ -7,6 +7,8 @@ import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/commands/script_selection.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
+import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/src/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
@@ -29,14 +31,20 @@ void main(List<String> args) async {
       // ignore
     }
 
-    ScriptsSource loadScriptSource() {
-      final cur = Directory.current;
-      if (RpsYaml.exists(cur)) {
-        return RpsYaml.load(Directory.current);
+    final cur = Directory.current;
+    final RpsYaml? rpsYaml =
+        RpsYaml.exists(cur) ? RpsYaml.load(Directory.current) : null;
+    final config = rpsYaml?.data ?? const RpsYamlData();
+
+    ScriptsSource getScriptSource() {
+      if (rpsYaml != null && rpsYaml.hasScripts) {
+        return rpsYaml;
       } else {
         return Pubspec.load(Directory.current);
       }
     }
+
+    final executor = Executor(interpreter: config.interpreter);
 
     final help = HelpOption(console: console, package: package);
     final cli = Cli(
@@ -44,13 +52,13 @@ void main(List<String> args) async {
       console: console,
       commands: [
         ScriptSelectionCommand(
-          getScriptsSource: loadScriptSource,
-          execute: bindings.execute,
+          getScriptsSource: getScriptSource,
+          executor: executor,
         ),
-        LsCommand(getScriptsSource: loadScriptSource),
+        LsCommand(getScriptsSource: getScriptSource),
         RunCommand(
-          getScriptsSource: loadScriptSource,
-          execute: bindings.execute,
+          getScriptsSource: getScriptSource,
+          executor: executor,
         ),
       ],
       options: [

@@ -63,7 +63,7 @@ void main() {
   group('run command', () {
     final run = RunCommand(
       getScriptsSource: () => MockedScriptSource(mockedPubspecYaml),
-      execute: execute(0),
+      executor: execute(0),
     );
 
     test('Correctly executes command', () async {

@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 import 'package:prompts/prompts.dart' as prompts;
+import 'package:rps/src/cli/executor.dart';
 
 class ScriptSelectionCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
-  final ExecuteFunction execute;
+  final Executor executor;
 
   ScriptSelectionCommand({
-    required this.execute,
+    required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
   }) : _getScriptsSource = getScriptsSource;
 
@@ -62,7 +63,7 @@ class ScriptSelectionCommand implements Command {
     final runCommandArguments = selected.context.path + arguments;
 
     await RunCommand(
-      execute: execute,
+      executor: executor,
       getScriptsSource: () => source,
     ).run(console, runCommandArguments);
   }

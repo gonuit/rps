@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:rps/rps.dart';
+import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:yaml/yaml.dart';
 
 /// A script source implementation that loads scripts from the `rps.yaml` file.
@@ -8,9 +9,11 @@ class RpsYaml implements ScriptsSource {
   static const filename = 'rps.yaml';
 
   final Directory directory;
-  final Map parsed;
+  final RpsYamlData data;
 
-  RpsYaml._(this.directory, this.parsed);
+  bool get hasScripts => data.scripts != null;
+
+  RpsYaml._(this.directory, this.data);
 
   /// Returns `true` if the `rps.yaml` file
   /// is present in the provided [directory].
@@ -33,17 +36,20 @@ class RpsYaml implements ScriptsSource {
 
     try {
       final string = file.readAsStringSync();
-      final parsed = Map.unmodifiable(loadYaml(string));
+      final parsed = loadYaml(string);
+      final data = RpsYamlData.fromYaml(parsed);
 
-      return RpsYaml._(directory, parsed);
+      return RpsYaml._(directory, data);
+    } on RpsException {
+      rethrow;
     } on Exception catch (err, st) {
-      throw RpsException('Scripts file cannot be parsed', err, st);
+      throw RpsException('The rps.yaml file cannot be parsed.', err, st);
     }
   }
 
   @override
   dynamic getScripts() {
-    dynamic scripts = parsed['scripts'];
+    final scripts = data.scripts;
     if (scripts == null) {
       throw RpsException('Missing scripts in the $filename file.');
     }

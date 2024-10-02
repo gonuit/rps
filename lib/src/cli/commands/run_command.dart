@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:collection/collection.dart';
 import 'package:rps/src/cli/commands/command.dart';
+import 'package:rps/src/cli/executor.dart';
 
 class RunCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
-  final ExecuteFunction execute;
+  final Executor executor;
 
   RunCommand({
-    required this.execute,
+    required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
   }) : _getScriptsSource = getScriptsSource;
 
@@ -59,10 +60,12 @@ class RunCommand implements Command {
         console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
         final command = event.compile();
         console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
-        final exitCode = await execute(command);
+        final exitCode = await executor.execute(command);
 
         if (exitCode != 0) {
-          throw RpsException('Command ended with a non zero exit code ($exitCode).');
+          throw RpsException(
+            'Command ended with a non zero exit code ($exitCode).',
+          );
         }
         console.writeln();
       } else if (event is CommandReferenced) {

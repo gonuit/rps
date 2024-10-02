@@ -4,7 +4,7 @@ set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" )
 
 
-project(rps_lib VERSION 0.2.0 LANGUAGES CXX)
+project(rps_lib VERSION 0.10.0 LANGUAGES CXX)
 add_library(rps_lib SHARED rps.cpp rps.def)
 add_executable(rps_test rps.cpp)
 

@@ -4,12 +4,14 @@
 #ifdef _WIN32
 #include <process.h>
 #include <windows.h>
+#include <string.h>
 // linux and macos
 #else
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
 #include <cstdlib>
+#include <string.h>
 #endif
 
 int main()
@@ -37,12 +39,23 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
     }
 }
 
-int runCommand(const char *command)
+int runCommand(const char *command, const char *interpreter)
 {
 
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    handle = _spawnlp(_P_NOWAIT, "powershell", "/c", command, (char *)NULL);
+    if (interpreter == NULL || strlen(interpreter) == 0 || strcmp(interpreter, "powershell") == 0)
+    {
+        handle = _spawnlp(_P_NOWAIT, "powershell", "powershell", "-Command", command, NULL);
+    }
+    else if (strcmp(interpreter, "cmd") == 0)
+    {
+        handle = _spawnlp(_P_NOWAIT, "cmd", "cmd", "/c", command, (char *)NULL);
+    }
+    else
+    {
+        return -1; // Return an error code if interpreter is not allowed
+    }
 
     int statusCode = 0;
     _cwait(&statusCode, handle, NULL);
@@ -58,8 +71,17 @@ void ctrlCHandler(int signum)
     kill(pid, SIGKILL);
 }
 
-int runCommand(const char *command)
+/// @brief Executes the `command` with the provided `interpreter`, by default bash.
+int runCommand(const char *command, const char *interpreter)
 {
+    if (interpreter == NULL || strlen(interpreter) == 0)
+    {
+        interpreter = "bash"; // Default to "bash" if no interpreter is provided
+    }
+    else if (strcmp(interpreter, "bash") != 0 && strcmp(interpreter, "zsh") != 0 && strcmp(interpreter, "sh") != 0)
+    {
+        return -1; // Return an error code if interpreter is not allowed
+    }
 
     pid = fork();
 
@@ -69,7 +91,7 @@ int runCommand(const char *command)
     }
     else if (pid == 0)
     {
-        execlp("bash", "bash", "-c", command, (char *)NULL);
+        execlp(interpreter, interpreter, "-c", command, (char *)NULL);
         // Nothing below this line should be executed by child process. If so,
         // it means that the execlp function wasn't successfull.
         exit(1);
@@ -99,12 +121,12 @@ int runCommand(const char *command)
 }
 #endif
 
-int execute(char *command)
+int execute(char *command, char *interpreter)
 {
     if (command == NULL)
     {
         return 1;
     }
 
-    return runCommand(command);
+    return runCommand(command, interpreter);
 }

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:http_api/http_api.dart';
+import 'package:http/http.dart' as http;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:rps/rps.dart';
 import 'package:path/path.dart' as p;
@@ -15,30 +15,30 @@ class PubDevApiException {
   PubDevApiException(this.statusCode, [this.message]);
 
   factory PubDevApiException.fromResponse(
-    Response response,
+    http.Response response,
   ) {
-    if (response.bodyBytes != null) {
-      final data = jsonDecode(response.body);
-      final error = data['error'];
-      if (error is Map<String, dynamic>) {
-        return PubDevApiException(
-          response.statusCode!,
-          error['message'],
-        );
-      }
+    final data = jsonDecode(response.body);
+    final error = data['error'];
+    if (error is Map<String, dynamic>) {
+      return PubDevApiException(
+        response.statusCode,
+        error['message'],
+      );
     }
 
     return PubDevApiException(response.statusCode);
   }
 }
 
-class PubDevApi extends BaseApi {
-  PubDevApi() : super(Uri.parse('https://pub.dev/api'));
+class PubDevApi {
+  String get baseUrl => 'https://pub.dev/api';
 
   Future<String> getLastVersion(String packageName) async {
-    final response = await get('/packages/$packageName');
+    final response = await http.get(
+      Uri.parse(p.join(baseUrl, '/packages/$packageName')),
+    );
 
-    if (response.ok) {
+    if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['latest']['version'];
     } else {
@@ -213,9 +213,5 @@ class RpsPackage {
       latest: latest,
       current: version,
     );
-  }
-
-  void dispose() {
-    _api.dispose();
   }
 }
