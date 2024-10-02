@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'dart:math' as math;
 
@@ -98,9 +97,9 @@ class CommandExecuted extends ExecutionEvent {
       return [
         filledCommand,
         _serializeArguments(arguments.sublist(lastUsed + 1))
-      ].whereNotNull().join(' ');
+      ].nonNulls.join(' ');
     } else {
-      return [command, _serializeArguments(arguments)].whereNotNull().join(' ');
+      return [command, _serializeArguments(arguments)].nonNulls.join(' ');
     }
   }
 
