@@ -42,7 +42,7 @@ int runCommand(const char *command)
 
     SetConsoleCtrlHandler(CtrlHandler, TRUE);
 
-    handle = _spawnlp(_P_NOWAIT, "cmd", "/c", command, (char *)NULL);
+    handle = _spawnlp(_P_NOWAIT, "powershell", "/c", command, (char *)NULL);
 
     int statusCode = 0;
     _cwait(&statusCode, handle, NULL);

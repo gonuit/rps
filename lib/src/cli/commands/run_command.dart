@@ -61,8 +61,8 @@ class RunCommand implements Command {
         console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
         final exitCode = await execute(command);
 
-        if (exitCode > 0) {
-          throw RpsException('Command ended with a non zero exit code.');
+        if (exitCode != 0) {
+          throw RpsException('Command ended with a non zero exit code ($exitCode).');
         }
         console.writeln();
       } else if (event is CommandReferenced) {
