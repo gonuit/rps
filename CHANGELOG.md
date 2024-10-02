@@ -1,3 +1,7 @@
+## 0.10.0
+- Calling `rps` will now display a list of all commands and allow you to select them.
+- Switched from `cmd` to `powershell` on Windows platform. 
+  - It allows multiline scripts to be executed correctly, resolves [#16](https://github.com/gonuit/rps/issues/16).
 ## 0.9.0
 - Added support for an external script file (`rps.yaml`), thanks to [@masreplay](https://github.com/masreplay) in [#24](https://github.com/gonuit/rps/pull/24).
 ## 0.8.2
