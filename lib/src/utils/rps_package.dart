@@ -109,24 +109,29 @@ class RpsConfig {
 class RpsConfigData {
   final DateTime? updateCheckedAt;
   final Version? latestVersion;
+  final DateTime? lastUpdateAlertAt;
 
   RpsConfigData({
     required this.updateCheckedAt,
     required this.latestVersion,
+    required this.lastUpdateAlertAt,
   });
 
   factory RpsConfigData.initial() => RpsConfigData(
         updateCheckedAt: null,
         latestVersion: null,
+        lastUpdateAlertAt: null,
       );
 
   RpsConfigData copyWith({
     DateTime? updateCheckedAt,
     Version? latestVersion,
+    DateTime? lastUpdateAlertAt,
   }) =>
       RpsConfigData(
         updateCheckedAt: updateCheckedAt ?? this.updateCheckedAt,
         latestVersion: latestVersion ?? this.latestVersion,
+        lastUpdateAlertAt: lastUpdateAlertAt ?? this.lastUpdateAlertAt,
       );
 
   static RpsConfigData fromJson(Map<String, dynamic> json) {
@@ -137,12 +142,16 @@ class RpsConfigData {
       latestVersion: json['latestVersion'] != null
           ? Version.parse(json['latestVersion'])
           : null,
+      lastUpdateAlertAt: json['lastUpdateAlertAt'] != null
+          ? DateTime.parse(json['lastUpdateAlertAt'])
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'updateCheckedAt': updateCheckedAt?.toIso8601String(),
+      'lastUpdateAlertAt': lastUpdateAlertAt?.toIso8601String(),
       'latestVersion': latestVersion.toString(),
     };
   }
@@ -182,6 +191,12 @@ class RpsPackage {
       api: PubDevApi(),
       lockFile: RpsConfig.load(directory),
     );
+  }
+
+  bool shouldShowUpdateAlert() {
+    final lastUpdateAlertAt = _config._data.lastUpdateAlertAt;
+    return lastUpdateAlertAt == null ||
+        lastUpdateAlertAt.add(Duration(days: 1)).isBefore(DateTime.now());
   }
 
   Future<Version> getLatestPackageVersion() async {

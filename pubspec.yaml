@@ -18,7 +18,7 @@ dependencies:
   yaml: ^3.1.2
   path: ^1.8.3
   ffi: ^2.1.0
-  meta: ^1.16.0
+  meta: ^1.10.0
   pub_semver: ^2.1.4
   collection: ^1.18.0
   prompts: ^2.0.0
