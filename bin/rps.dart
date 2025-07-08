@@ -10,7 +10,6 @@ import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:rps/src/utils/rps_package.dart';
-import 'package:rps/src/bindings/execute.dart' as bindings;
 import 'package:rps/rps.dart';
 
 void main(List<String> args) async {

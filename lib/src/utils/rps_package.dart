@@ -35,7 +35,7 @@ class PubDevApi {
 
   Future<String> getLastVersion(String packageName) async {
     final response = await http.get(
-      Uri.parse(p.join(baseUrl, '/packages/$packageName')),
+      Uri.parse('$baseUrl/packages/$packageName'),
     );
 
     if (response.statusCode == 200) {
