@@ -28,7 +28,7 @@ class LsCommand implements Command {
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source);
-    final commands = parser.listCommands().toList();
+    final commands = parser.listCommands().where((c) => !c.isHook).toList();
     if (commands.isNotEmpty) {
       console.writeln('${bold('Commands')}:');
       for (final command in commands) {
