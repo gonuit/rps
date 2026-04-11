@@ -1,6 +1,6 @@
 name: rps
 description: rps (Run Pubspec Script) allows you to define and run scripts from pubspec.yaml.
-version: 0.10.0-dev.1
+version: 0.10.0
 repository: https://github.com/gonuit/rps
 homepage: https://github.com/gonuit/rps
 issue_tracker: https://github.com/gonuit/rps/issues
@@ -9,10 +9,70 @@ executables:
   rps:
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 scripts:
-  gen: dart run build_runner build -d
+  # run is a default script. To use it, simply type
+  # in the command line: "rps" - that's all!
+  run:
+    $script: echo "flutter run -t lib/main_development.dart --flavor development"
+    $description: Runs the app in development mode
+  # you can define more commands like this: "rps gen"
+  gen:
+    $script: echo "flutter pub run build_runner watch --delete-conflicting-outputs"
+    $description: Generates code with build_runner in watch mode
+  # positional arguments example: rps target apk
+  target:
+    $script: echo "flutter build ${0} -t lib/main.dart --release"
+    $description: Builds the specified target using positional arg
+  # plain script reused as a hook reference
+  get:
+    $script: echo "flutter pub get"
+    $description: Runs flutter pub get
+  # script that uses a reference inside the $before hook
+  test:
+    $before: rps get
+    $script: echo "flutter test"
+    $description: Runs tests after fetching dependencies
+  # and even nest them!
+  build:
+    # You can use hooks to! (and even nest them!)
+    $before: echo "flutter pub get"
+    $after: echo "Build done!"
+    android:
+      # rps build android apk
+      apk:
+        $before: echo "Building android apk..."
+        $script: echo "flutter build --release apk --flavor production"
+        $description: Builds production Android APK
+      # rps build android appbundle
+      appbundle:
+        $script: echo "flutter build --release appbundle --flavor production"
+        $description: Builds production Android App Bundle
+      # and so on...
+  # too long command? no problem! define alias using reference syntax!
+  bab: rps build android appbundle
+  # as simple as typing "rps baa"
+  baa: rps build android apk
+  # some commands may vary from platform to platform
+  # but that's not a problem
+  clear:
+    # use the $script key to define platform specific scripts
+    $script:
+      # define the default script
+      $default: echo "rm -rf ./app/cache"
+      # And different script for the windows platform.
+      $windows: echo "rd /s /q app\cache"
+      # linux specific
+      $linux: echo "rm -rf /var/cache/app"
+      # macos specific
+      $macos: echo "rm -rf ~/Library/Caches/app"
+      # now "rps clear" will work on any platform!
+    $description: Clears the app cache (platform aware)
+  # want to run multi line script, here is an example
+  reset: |
+    echo "flutter clean"
+    echo "flutter pub get"
 
 dependencies:
   yaml: ^3.1.2

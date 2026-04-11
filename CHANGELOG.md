@@ -1,7 +1,9 @@
 ## 0.10.0
 - Calling `rps` will now display a list of all commands and allow you to select them.
-- Switched from `cmd` to `powershell` on Windows platform. 
+- Switched from `cmd` to `powershell` on Windows platform.
   - It allows multiline scripts to be executed correctly, resolves [#16](https://github.com/gonuit/rps/issues/16).
+- `rps ls` no longer lists `$before` / `$after` hook entries.
+- Child script exit codes are now reported correctly on macOS and Linux, and propagated back to the parent shell (`rps fail` where `fail: exit 7` now exits `7`).
 ## 0.9.1
 - Used static linking of the CRT library on Windows instead of dynamic - solves Windows problems when the CRT library was not present.
 ## 0.9.0
