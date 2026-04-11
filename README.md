@@ -3,7 +3,7 @@
 RPS is a dart script manager that allows you to define and use scripts from the _pubspec.yaml_ file.
 
 
-## Features 
+## Features
 <!-- no toc -->
 - [🔦 Listing commands](#-listing-commands)
 - [🪆 Nesting](#-nesting)
@@ -12,6 +12,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [💻 Platform specific scripts](#-platform-specific-scripts)
 - [🎯 Positional arguments](#-positional-arguments)
 - [📝 External scripts file](#-external-scripts-file)
+- [🛠 CLI options](#-cli-options)
 
 ## Quick start 🚀
 
@@ -123,12 +124,12 @@ You can also combine multiple scripts using references!
 scripts:
   get: flutter pub get
   test:
-    # equivalent of "rps run get"
-    $before: $get
+    # equivalent of "rps get"
+    $before: rps get
     $script: flutter test
   build:
-    # equivalent of "rps run test"
-    $before: $test
+    # equivalent of "rps test"
+    $before: rps test
     $script: flutter build apk
 ```
 
@@ -191,6 +192,11 @@ Now just run `rps build apk`.
 
 You can still add trailing arguments, such as `rps build apk --flavor funny` what will execute the following command `flutter build apk -t lib/main.dart --release --flavor funny`.
 
+A few rules to keep in mind:
+- Indices must be contiguous starting from `${0}` — using `${0}` and `${2}` without `${1}` will error.
+- The same index can be reused in one command (e.g. `echo ${0} ${0}`).
+- Hooks (`$before` / `$after`) **do not** support positional arguments.
+
 ## 📝 External scripts file
 
 If you prefer to keep your scripts separate from your `pubspec.yaml`, you can define them in an external **`rps.yaml`** file. When an `rps.yaml` file is present in your project's root directory, rps will use it as the scripts source **instead of the scripts in `pubspec.yaml`**.
@@ -214,6 +220,27 @@ To use an external scripts file:
     rps build release
     ```
 Using `rps.yaml` allows you to keep your `pubspec.yaml` file focused on dependencies and package configuration, while managing your scripts in a dedicated file.
+
+### Picking an interpreter
+
+The same `rps.yaml` lets you choose the shell that runs your scripts on each platform:
+
+```yaml
+windows:
+  interpreter: cmd        # cmd | powershell (default)
+linux:
+  interpreter: zsh        # bash (default) | sh | zsh
+macos:
+  interpreter: zsh        # bash (default) | sh | zsh
+```
+
+## 🛠 CLI options
+
+| Option            | Description                                                                |
+| ----------------- | -------------------------------------------------------------------------- |
+| `-h`, `--help`    | Print help.                                                                |
+| `--version`       | Print rps version.                                                         |
+| `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
 
 ## 🔎 Overview example
 
