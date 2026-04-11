@@ -9,6 +9,7 @@ import 'package:rps/src/cli/commands/script_selection.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
+import 'package:rps/src/update_check/update_notifier.dart';
 import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/rps.dart';
 
@@ -17,20 +18,8 @@ void main(List<String> args) async {
 
   try {
     final package = await RpsPackage.load();
-    try {
-      if (package.shouldShowUpdateAlert()) {
-        final versions = await package.getVersions();
-        if (versions.hasUpdate) {
-          console.writeBordered([
-            'Update available ${gray(versions.current.toString())} → ${green(versions.latest.toString())}',
-            'Run ${lightBlue('dart pub global activate rps')} to update',
-          ]);
-          await Future.delayed(const Duration(seconds: 2));
-        }
-      }
-    } on Exception {
-      // ignore
-    }
+    await UpdateNotifier.forPackage(package: package, console: console)
+        .notifyIfUpdateAvailable();
 
     final cur = Directory.current;
     final RpsYaml? rpsYaml =
