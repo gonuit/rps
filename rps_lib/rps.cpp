@@ -106,16 +106,24 @@ int runCommand(const char *command, const char *interpreter)
         sigIntHandler.sa_flags = 0;
         sigaction(SIGINT, &sigIntHandler, NULL);
 
-        int exitCode = 0;
-        int returnedPid = waitpid(pid, &exitCode, 0);
+        int status = 0;
+        int returnedPid = waitpid(pid, &status, 0);
         // -1 on error.
         if (returnedPid == -1)
         {
             return 1;
         }
+        else if (WIFEXITED(status))
+        {
+            return WEXITSTATUS(status);
+        }
+        else if (WIFSIGNALED(status))
+        {
+            return 128 + WTERMSIG(status);
+        }
         else
         {
-            return exitCode;
+            return 1;
         }
     }
 }
