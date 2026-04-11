@@ -1,0 +1,25 @@
+# Native library source and build config. Only the compiled binaries in
+# native/ are used at runtime via FFI; consumers don't build from source.
+rps_lib/
+
+# Tests are not needed by package consumers.
+test/
+
+# Runtime state file (pub.dev version cache) — never publish.
+rps.config
+
+# Local scripts override file.
+rps.yaml
+
+# Build outputs.
+build/
+
+# Editor / OS cruft.
+.vscode/
+.DS_Store
+
+# Generated docs.
+doc/api/
+
+# Coverage reports.
+coverage/
