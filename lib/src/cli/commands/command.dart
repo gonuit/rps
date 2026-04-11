@@ -19,10 +19,7 @@ abstract interface class Command {
   ///   - arguments: A list of command-line arguments.
   bool match(List<String> arguments);
 
-  /// Executes the command using the given [console] and [arguments].
-  ///
-  /// - Parameters:
-  ///   - console: The console instance for input/output operations.
-  ///   - arguments: A list of command-line arguments.
+  /// Executes the command. Throws [CliException] with a specific
+  /// [exitCode] on failure; returns normally on success.
   Future<void> run(Console console, List<String> arguments);
 }

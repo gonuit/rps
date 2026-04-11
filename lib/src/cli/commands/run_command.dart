@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:collection/collection.dart';
 import 'package:rps/src/cli/commands/command.dart';
+import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 
 class RunCommand implements Command {
@@ -31,7 +32,7 @@ class RunCommand implements Command {
   }
 
   @override
-  Future<int> run(Console console, List<String> arguments) async {
+  Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source);
 
@@ -63,8 +64,9 @@ class RunCommand implements Command {
         final exitCode = await executor.execute(command);
 
         if (exitCode != 0) {
-          throw RpsException(
+          throw CliException(
             'Command ended with a non zero exit code ($exitCode).',
+            exitCode: exitCode,
           );
         }
         console.writeln();
@@ -80,7 +82,5 @@ class RunCommand implements Command {
         // console.writeln('${boldGreen('>')} ${basePath.sublist(0, basePath.length - 1).join(' ')} ${blue(event.name)}');
       }
     }
-
-    return 0;
   }
 }
