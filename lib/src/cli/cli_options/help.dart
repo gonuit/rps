@@ -57,8 +57,7 @@ class HelpOption extends CliOption {
           console.writeln(
               '  ${command.tooltip ?? command.name} - ${command.description}');
         } else {
-          console.writeln(
-              '  ${command.description}');
+          console.writeln('  ${command.description}');
         }
       }
     }

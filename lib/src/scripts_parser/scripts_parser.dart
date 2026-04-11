@@ -44,8 +44,7 @@ class _ScriptParser implements ScriptsParser {
 
     if (current is String) {
       if (context.isRoot) {
-        // todo: load file with scripts
-        /// Do not consider hooks
+        // Root-level string values aren't commands; skip.
       } else if (context.key == ScriptsParser.scriptKey ||
           (context.key != null && !ScriptsParser.isSpecialKey(context.key!))) {
         yield CommandExecuted(

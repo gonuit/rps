@@ -33,11 +33,11 @@ class UpgradeOption extends CliOption {
         'Command ended with a non zero exit code.',
         exitCode: exitCode,
       );
-    } else {
-      console
-        ..writeln()
-        ..writeln(boldGreen('✓ rps updated successfully!'))
-        ..writeln();
     }
+
+    console
+      ..writeln()
+      ..writeln(boldGreen('✓ rps updated successfully!'))
+      ..writeln();
   }
 }

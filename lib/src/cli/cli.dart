@@ -37,10 +37,9 @@ class Cli {
         console
           ..writeln('${bold(yellow('Warning!'))} No command has been matched.')
           ..writeln();
-        fallback!.run(this, console, arguments);
-      } else {
-        throw CliException('No command has been matched.');
+        return fallback!.run(this, console, arguments);
       }
+      throw CliException('No command has been matched.');
     } catch (_) {
       await console.flush();
       rethrow;
