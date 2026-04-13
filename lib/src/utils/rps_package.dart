@@ -1,9 +1,7 @@
-import 'dart:io';
-import 'dart:isolate';
-
 import 'package:pub_semver/pub_semver.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/config/rps_config.dart';
+import 'package:rps/src/utils/file_system.dart';
 
 /// Provides metadata about the rps package itself.
 class RpsPackage {
@@ -27,20 +25,22 @@ class RpsPackage {
         _config = config;
 
   /// Loads the rps package from its installed location.
-  static Future<RpsPackage> load() async {
-    final directory = await _getPackageDirectory();
+  static Future<RpsPackage> load({
+    required FileSystem fs,
+  }) async {
+    final directoryPath = await _getPackageDirectoryPath(fs);
     return RpsPackage(
-      pubspec: Pubspec.load(directory),
-      config: RpsConfig.load(directory),
+      pubspec: Pubspec.load(directoryPath, fs: fs),
+      config: RpsConfig.load(directoryPath, fs: fs),
     );
   }
 
-  static Future<Directory> _getPackageDirectory() async {
+  static Future<String> _getPackageDirectoryPath(FileSystem fs) async {
     const rootLibrary = 'package:rps/rps.dart';
-    final uri = await Isolate.resolvePackageUri(Uri.parse(rootLibrary));
-    if (uri == null) {
+    final path = await fs.resolvePackagePath(rootLibrary);
+    if (path == null) {
       throw RpsException('Library cannot be loaded.');
     }
-    return Directory.fromUri(uri.resolve('..'));
+    return path;
   }
 }

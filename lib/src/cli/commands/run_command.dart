@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:rps/rps.dart';
 import 'package:collection/collection.dart';
+import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
 class RunCommand implements Command {
@@ -13,11 +14,15 @@ class RunCommand implements Command {
   /// The executor used to run shell commands.
   final Executor executor;
 
+  final Platform _platform;
+
   /// Creates a [RunCommand].
   RunCommand({
     required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
-  }) : _getScriptsSource = getScriptsSource;
+    required Platform platform,
+  })  : _getScriptsSource = getScriptsSource,
+        _platform = platform;
 
   @override
   String get description =>
@@ -32,13 +37,13 @@ class RunCommand implements Command {
 
   @override
   bool match(List<String> arguments) {
-    return true;
+    return arguments.isNotEmpty;
   }
 
   @override
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
-    final parser = ScriptsParser(source: source);
+    final parser = ScriptsParser(source: source, platform: _platform);
 
     final List<ExecutionEvent> events;
     try {
@@ -82,8 +87,7 @@ class RunCommand implements Command {
         console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
         console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
       } else if (event is HookExecuted) {
-        // final basePath = event.context.basePath;
-        // console.writeln('${boldGreen('>')} ${basePath.sublist(0, basePath.length - 1).join(' ')} ${blue(event.name)}');
+        // No output for hook events.
       }
     }
   }

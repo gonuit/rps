@@ -15,12 +15,12 @@ class StreamSinkController implements StringSink {
   }
 
   @override
-  void writeAll(Iterable objects, [String separator = ""]) {
+  void writeAll(Iterable objects, [String separator = '']) {
     _writes.add(objects.join(separator));
   }
 
   @override
-  void writeln([Object? obj = ""]) {
+  void writeln([Object? obj = '']) {
     _writes.add('$obj\n');
   }
 

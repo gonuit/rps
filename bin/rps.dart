@@ -1,76 +1,21 @@
 import 'dart:io';
 
-import 'package:rps/src/cli/cli.dart';
-import 'package:rps/src/cli/cli_options/help.dart';
-import 'package:rps/src/cli/cli_options/upgrade.dart';
-import 'package:rps/src/cli/cli_options/version.dart';
-import 'package:rps/src/cli/commands/list.dart';
-import 'package:rps/src/cli/commands/script_selection.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
-import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/models/rps_yaml_data.dart';
-import 'package:rps/src/update_check/update_notifier.dart';
-import 'package:rps/src/utils/rps_package.dart';
 import 'package:rps/rps.dart';
+import 'package:rps/src/cli/cli_runner.dart';
+import 'package:rps/src/update_check/clock.dart';
+import 'package:rps/src/utils/environment.dart';
+import 'package:rps/src/utils/file_system.dart';
+import 'package:rps/src/utils/platform.dart';
 
 void main(List<String> args) async {
-  final console = Console(sink: stdout);
-
-  try {
-    final package = await RpsPackage.load();
-    await UpdateNotifier.forPackage(package: package, console: console)
-        .notifyIfUpdateAvailable();
-
-    final cur = Directory.current;
-    final RpsYaml? rpsYaml =
-        RpsYaml.exists(cur) ? RpsYaml.load(Directory.current) : null;
-    final config = rpsYaml?.data ?? const RpsYamlData();
-
-    ScriptsSource getScriptSource() {
-      if (rpsYaml != null && rpsYaml.hasScripts) {
-        return rpsYaml;
-      } else {
-        return Pubspec.load(Directory.current);
-      }
-    }
-
-    final executor = Executor(interpreter: config.interpreter);
-
-    final help = HelpOption(console: console, package: package);
-    final cli = Cli(
-      package: package,
-      console: console,
-      commands: [
-        ScriptSelectionCommand(
-          getScriptsSource: getScriptSource,
-          executor: executor,
-        ),
-        LsCommand(getScriptsSource: getScriptSource),
-        RunCommand(
-          getScriptsSource: getScriptSource,
-          executor: executor,
-        ),
-      ],
-      options: [
-        help,
-        const VersionOption(),
-        const UpgradeOption(),
-      ],
-      fallback: help,
-    );
-
-    await cli.run(args);
-  } on RpsException catch (err) {
-    stderr.writeln("${boldRed('Error!')} ${err.message}");
-    await stderr.flush();
-    exit(1);
-  } on CliException catch (err) {
-    stderr.writeln("${boldRed('Error!')} ${err.message}");
-    await stderr.flush();
-    exit(err.exitCode);
-  } catch (err, st) {
-    stderr.writeln("${boldRed('Error!')} $err\n$st");
-    await stderr.flush();
-    exit(1);
-  }
+  final exitCode = await runCli(
+    args,
+    console: Console(sink: stdout),
+    errorSink: stderr,
+    environment: const SystemEnvironment(),
+    platform: const SystemPlatform(),
+    fs: const SystemFileSystem(),
+    clock: const SystemClock(),
+  );
+  if (exitCode != 0) exit(exitCode);
 }

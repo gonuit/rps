@@ -22,7 +22,7 @@ class UpdateChecker {
     required String packageName,
     required PubDevApi api,
     required RpsConfig config,
-    Clock clock = const SystemClock(),
+    required Clock clock,
     UpdateCheckPolicy policy = const UpdateCheckPolicy(),
     Duration networkTimeout = const Duration(milliseconds: 300),
   })  : _currentVersion = currentVersion,

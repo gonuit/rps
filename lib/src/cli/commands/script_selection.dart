@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
-import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
 class ScriptSelectionCommand implements Command {
@@ -12,11 +13,15 @@ class ScriptSelectionCommand implements Command {
   /// The executor used to run shell commands.
   final Executor executor;
 
+  final Platform _platform;
+
   /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
     required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
-  }) : _getScriptsSource = getScriptsSource;
+    required Platform platform,
+  })  : _getScriptsSource = getScriptsSource,
+        _platform = platform;
 
   @override
   String get description =>
@@ -36,7 +41,7 @@ class ScriptSelectionCommand implements Command {
   @override
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
-    final parser = ScriptsParser(source: source);
+    final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
 
     final selected = selectCommand(console, commands);
@@ -69,6 +74,7 @@ class ScriptSelectionCommand implements Command {
     await RunCommand(
       executor: executor,
       getScriptsSource: () => source,
+      platform: _platform,
     ).run(console, runCommandArguments);
   }
 }

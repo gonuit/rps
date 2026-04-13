@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'package:rps/rps.dart';
+import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/pub_dev_api.dart';
 import 'package:rps/src/update_check/update_check_result.dart';
 import 'package:rps/src/update_check/update_checker.dart';
@@ -19,7 +20,7 @@ class UpdateNotifier {
   UpdateNotifier({
     required UpdateChecker checker,
     required Console console,
-    Duration postAlertPause = const Duration(seconds: 2),
+    Duration postAlertPause = const Duration(seconds: 1),
   })  : _checker = checker,
         _console = console,
         _postAlertPause = postAlertPause;
@@ -28,6 +29,7 @@ class UpdateNotifier {
   factory UpdateNotifier.forPackage({
     required RpsPackage package,
     required Console console,
+    required Clock clock,
   }) {
     return UpdateNotifier(
       checker: UpdateChecker(
@@ -35,6 +37,7 @@ class UpdateNotifier {
         packageName: package.name,
         api: PubDevApi(userAgent: '${package.name}/${package.version}'),
         config: package.config,
+        clock: clock,
       ),
       console: console,
     );
@@ -65,6 +68,11 @@ class UpdateNotifier {
 
   void _render(UpdateCheckResult result) {
     _console.writeBordered([
+      boldRed('█▀█ █▀█ █▀▀'),
+      boldRed('█▄▀ █▀▀ █▄▄'),
+      boldRed('█ █ █   ▄▄█'),
+      red('Run Pubspec Script'),
+      '',
       'Update available ${gray(result.current.toString())} → ${green(result.latest.toString())}',
       'Run ${lightBlue('dart pub global activate rps')} to update',
     ]);

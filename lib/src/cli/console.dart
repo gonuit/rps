@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 /// Wraps [text] in gray ANSI escape codes.
-String gray(String text) => '\x1B[30m$text\x1B[0m';
+String gray(String text) => '\x1B[90m$text\x1B[0m';
 
 /// Wraps [text] in red ANSI escape codes.
 String red(String text) => '\x1B[31m$text\x1B[0m';
@@ -131,8 +131,6 @@ class Console implements StringSink {
 
   /// Creates a [Console] backed by the given [sink].
   Console({required StringSink sink}) : _sink = sink;
-
-  /// Function to remove ANSI escape sequences from a string
 
   /// Returns the visible length of [input] (excluding ANSI escape sequences).
   int visibleLength(String input) {

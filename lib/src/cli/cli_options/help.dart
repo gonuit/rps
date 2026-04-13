@@ -34,10 +34,6 @@ class HelpOption extends CliOption {
       ..writeln(
           '${bold('Run Pubspec Script')} (${boldGreen('rps')}) ${bold("v${package.version}")}')
       ..writeln();
-    // ..writeln('${bold('Options')}:')
-    // ..writeln('  -v, --version - prints version.')
-    // ..writeln('  -h, --help    - prints help.')
-    // ..writeln('  -u, --upgrade - upgrades rps package.');
 
     final options = cli.options;
     if (options.isNotEmpty) {

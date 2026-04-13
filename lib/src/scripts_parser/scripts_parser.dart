@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
+import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Parses and resolves scripts from a [ScriptsSource].
 abstract class ScriptsParser {
@@ -37,13 +37,21 @@ abstract class ScriptsParser {
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments);
 
   /// Creates a [ScriptsParser] for the given [source].
-  factory ScriptsParser({required ScriptsSource source}) = _ScriptParser;
+  factory ScriptsParser({
+    required ScriptsSource source,
+    required Platform platform,
+  }) = _ScriptParser;
 }
 
 class _ScriptParser implements ScriptsParser {
   final ScriptsSource _source;
+  final Platform _platform;
 
-  _ScriptParser({required ScriptsSource source}) : _source = source;
+  _ScriptParser({
+    required ScriptsSource source,
+    required Platform platform,
+  })  : _source = source,
+        _platform = platform;
 
   @override
   List<CommandExecuted> listCommands() {
@@ -78,7 +86,7 @@ class _ScriptParser implements ScriptsParser {
             description: description,
           );
         } else if (script is Map) {
-          final platformKey = '\$${Platform.operatingSystem}';
+          final platformKey = '\$${_platform.operatingSystem}';
           final command =
               script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
           if (command is! String) {
@@ -155,7 +163,6 @@ class _ScriptParser implements ScriptsParser {
       return;
     } else if (current is String) {
       if (context.isRoot) {
-        // todo Load file with scripts
         throw RpsException(
           'The root key "scripts" cannot contain commands.',
         );
@@ -178,7 +185,7 @@ class _ScriptParser implements ScriptsParser {
               arguments: arguments,
             );
           } else if (script is Map) {
-            final platformKey = '\$${Platform.operatingSystem}';
+            final platformKey = '\$${_platform.operatingSystem}';
             final command =
                 script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
             if (command is! String) {
@@ -237,7 +244,7 @@ class _ScriptParser implements ScriptsParser {
         isHook: true,
         command: beforeHook,
         context: hookContext,
-        // arguments are not passed to to the hooks
+        // arguments are not passed to the hooks
         arguments: null,
       );
     }
@@ -255,7 +262,7 @@ class _ScriptParser implements ScriptsParser {
       yield* _handleCommand(
         command: afterHook,
         context: hookContext,
-        // arguments are not passed to to the hooks
+        // arguments are not passed to the hooks
         arguments: null,
         isHook: true,
       );
@@ -278,7 +285,7 @@ class _ScriptParser implements ScriptsParser {
         isHook: isHook,
       );
 
-      /// Ref should start from root.
+      // Ref should start from root.
       yield* _getCommandsToExecute(
         context: Context(
           key: null,

@@ -4,7 +4,6 @@ import 'package:rps/rps.dart';
 /// Base class for all script execution events.
 @immutable
 abstract class ExecutionEvent {
-  /// Creates an [ExecutionEvent].
   /// The context in which this event was resolved.
   Context get context;
 

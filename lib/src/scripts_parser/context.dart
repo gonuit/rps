@@ -83,7 +83,7 @@ class Context {
       key: key,
       parent: this,
       isBase: false,
-      current: current[key],
+      current: current is Map ? current[key] : null,
     );
   }
 

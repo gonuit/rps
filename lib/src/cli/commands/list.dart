@@ -2,15 +2,19 @@ import 'dart:async';
 
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
+import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `ls` command that lists all available scripts.
 class LsCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
+  final Platform _platform;
 
   /// Creates an [LsCommand].
   LsCommand({
     required FutureOr<ScriptsSource> Function() getScriptsSource,
-  }) : _getScriptsSource = getScriptsSource;
+    required Platform platform,
+  })  : _getScriptsSource = getScriptsSource,
+        _platform = platform;
 
   @override
   String get description => 'List all commands.';
@@ -29,7 +33,7 @@ class LsCommand implements Command {
   @override
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
-    final parser = ScriptsParser(source: source);
+    final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
     if (commands.isNotEmpty) {
       console.writeln('${bold('Commands')}:');

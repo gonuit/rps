@@ -1,3 +1,8 @@
+## 0.11.0
+- Skip update check and interactive selection in CI environments.
+- Fixed gray text invisible on dark terminals.
+- Fixed arguments with spaces not being quoted.
+
 ## 0.10.1
 - Added dartdoc comments and package example.
 - Enabled stricter linting rules.

@@ -1,11 +1,11 @@
 import 'dart:ffi';
-import 'dart:io';
-import 'dart:isolate';
 
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as path;
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
+import 'package:rps/src/utils/file_system.dart';
+import 'package:rps/src/utils/platform.dart' as rps;
 
 /// Native FFI signature for the execute function.
 typedef ExecuteNative = Int32 Function(
@@ -30,6 +30,8 @@ Future<int> execute(
   bool verbose = false,
   Interpreter? interpreter,
   StringSink? out,
+  required rps.Platform platform,
+  required FileSystem fs,
 }) async {
   final bindings = <Abi, String>{
     Abi.windowsX64: 'rps_x64.dll',
@@ -39,16 +41,16 @@ Future<int> execute(
     Abi.macosArm64: 'librps.dylib',
   };
 
-  if (!Platform.isWindows && interpreter is WindowsInterpreter) {
+  if (!platform.isWindows && interpreter is WindowsInterpreter) {
     throw RpsException(
-      'The Windows interpreter cannot be used on ${Platform.operatingSystem}.',
+      'The Windows interpreter cannot be used on ${platform.operatingSystem}.',
     );
   }
-  if (!Platform.isLinux &&
-      !Platform.isMacOS &&
+  if (!platform.isLinux &&
+      !platform.isMacOS &&
       interpreter is UnixInterpreter) {
     throw RpsException(
-      'The Unix interpreter cannot be used on ${Platform.operatingSystem}.',
+      'The Unix interpreter cannot be used on ${platform.operatingSystem}.',
     );
   }
 
@@ -61,42 +63,41 @@ Future<int> execute(
   }
 
   const rootLibrary = 'package:rps/rps.dart';
-  final uri = await Isolate.resolvePackageUri(Uri.parse(rootLibrary));
-  if (uri == null) {
+  final packagePath = await fs.resolvePackagePath(rootLibrary);
+  if (packagePath == null) {
     throw RpsException('Cannot load the library.');
   }
 
-  final platform = Abi.current();
+  final abi = Abi.current();
   if (verbose) {
-    out?.writeln('Running on platform: $platform');
+    out?.writeln('Running on platform: $abi');
   }
 
-  String? libraryName = bindings[platform];
+  String? libraryName = bindings[abi];
 
   if (verbose) {
     out?.writeln('Dynamic library file selected: $libraryName');
   }
 
   if (libraryName == null) {
-    throw RpsException(
-        'Current platform ($platform) is currently not supported.');
+    throw RpsException('Current platform ($abi) is currently not supported.');
   }
 
-  final root = path.fromUri(uri.resolve(path.join('..', 'native')).path);
-  final libraryPath = path.join(root, libraryName);
+  final nativePath = path.join(packagePath, 'native');
+  final libraryPath = path.join(nativePath, libraryName);
 
   if (verbose) {
     out?.writeln('Dynamic library path: $libraryPath');
   }
 
   final dylib = DynamicLibrary.open(libraryPath);
-  final execute = dylib.lookupFunction<ExecuteNative, Execute>('execute');
+  final executeFn = dylib.lookupFunction<ExecuteNative, Execute>('execute');
 
   final commandC = command.toNativeUtf8();
   final interpreterC =
       interpreter == null ? nullptr : interpreter.value.toNativeUtf8();
 
-  final code = execute(commandC, interpreterC);
+  final code = executeFn(commandC, interpreterC);
 
   // cleanup
   malloc.free(commandC);

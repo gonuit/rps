@@ -1,7 +1,7 @@
-import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
-import 'package:rps/src/cli/cli_options/cli_option.dart';
 import 'package:collection/collection.dart';
+import 'package:rps/rps.dart';
+import 'package:rps/src/cli/cli_options/cli_option.dart';
+import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
@@ -46,9 +46,6 @@ class Cli {
       }
 
       if (fallback != null) {
-        console
-          ..writeln('${bold(yellow('Warning!'))} No command has been matched.')
-          ..writeln();
         return fallback!.run(this, console, arguments);
       }
       throw CliException('No command has been matched.');

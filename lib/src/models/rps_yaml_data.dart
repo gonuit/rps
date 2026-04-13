@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
+import 'package:rps/src/utils/platform.dart';
 import 'package:yaml/yaml.dart';
 
 /// Parsed data from the rps.yaml configuration file.
@@ -97,13 +96,13 @@ class UnixConfig {
 
 /// Extension to resolve the platform-appropriate interpreter.
 extension GetInterpreter on RpsYamlData {
-  /// Returns the interpreter for the current platform, or null if unsupported.
-  Interpreter? get interpreter {
-    if (Platform.isWindows) {
+  /// Returns the interpreter for the given [platform], or null if unsupported.
+  Interpreter? getInterpreter(Platform platform) {
+    if (platform.isWindows) {
       return windows.interpreter;
-    } else if (Platform.isMacOS) {
+    } else if (platform.isMacOS) {
       return macos.interpreter;
-    } else if (Platform.isLinux) {
+    } else if (platform.isLinux) {
       return linux.interpreter;
     } else {
       return null;

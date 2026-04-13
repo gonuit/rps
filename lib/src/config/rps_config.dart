@@ -1,55 +1,62 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
+import 'package:rps/src/utils/file_system.dart';
 
 /// Manages reading and writing the rps.config file.
 class RpsConfig {
-  final File _file;
+  final String _filePath;
+  final FileSystem _fs;
 
   /// The current configuration data.
   RpsConfigData get data => _data;
   RpsConfigData _data;
 
   RpsConfig._({
-    required File file,
+    required String filePath,
     required RpsConfigData data,
+    required FileSystem fs,
   })  : _data = data,
-        _file = file;
+        _filePath = filePath,
+        _fs = fs;
 
-  /// Loads the config from [directory], creating a default one if missing.
-  factory RpsConfig.load(Directory directory) {
-    final configFile = File(p.join(directory.path, 'rps.config'));
+  /// Loads the config from [directoryPath], creating a default one if missing.
+  factory RpsConfig.load(
+    String directoryPath, {
+    required FileSystem fs,
+    StringSink? out,
+  }) {
+    final configPath = p.join(directoryPath, 'rps.config');
 
     RpsConfig createInitial() {
       final config = RpsConfigData.initial();
-      configFile.writeAsStringSync(
+      fs.writeFile(
+        configPath,
         const JsonEncoder.withIndent('  ').convert(config.toJson()),
-        flush: true,
       );
-      return RpsConfig._(file: configFile, data: config);
+      return RpsConfig._(filePath: configPath, data: config, fs: fs);
     }
 
-    if (!configFile.existsSync()) {
+    if (!fs.fileExists(configPath)) {
       return createInitial();
     }
 
     try {
-      final data = configFile.readAsStringSync();
+      final data = fs.readFile(configPath);
       final config = RpsConfigData.fromJson(jsonDecode(data));
-      return RpsConfig._(file: configFile, data: config);
+      return RpsConfig._(filePath: configPath, data: config, fs: fs);
     } on Exception catch (err) {
-      stdout.write('Cannot read configuration. Fallback to default.\n$err');
+      out?.write('Cannot read configuration. Fallback to default.\n$err');
       return createInitial();
     }
   }
 
   /// Persists [data] to disk and updates the in-memory state.
   void update(RpsConfigData data) {
-    _file.writeAsStringSync(
+    _fs.writeFile(
+      _filePath,
       const JsonEncoder.withIndent('  ').convert(data.toJson()),
-      flush: true,
     );
     _data = data;
   }

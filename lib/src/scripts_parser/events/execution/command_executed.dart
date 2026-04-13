@@ -1,5 +1,6 @@
-import 'package:rps/rps.dart';
 import 'dart:math' as math;
+
+import 'package:rps/rps.dart';
 
 /// A positional argument placeholder parsed from a command string.
 class PositionalArgument {
@@ -153,7 +154,8 @@ class CommandExecuted extends ExecutionEvent {
   }
 
   /// Escape backslashes, single and double quotes for shell safety
-  /// and enclose in quotes only if necessary: contains spaces or quotes
+  /// and enclose in quotes if necessary (contains spaces, quotes, or
+  /// special characters).
   String? _serializeArguments(List<String> arguments) {
     if (arguments.isEmpty) return null;
 
@@ -163,7 +165,7 @@ class CommandExecuted extends ExecutionEvent {
           .replaceAll('"', r'\"')
           .replaceAll("'", r"\'");
 
-      if (escaped != arg) {
+      if (escaped != arg || arg.contains(' ')) {
         return '"$escaped"';
       }
       return escaped;

@@ -2,6 +2,8 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_file_system.dart';
+import '../mocks/fake_platform.dart';
 import '../mocks/script_source.mock.dart';
 import '../mocks/stream_sink_controller.dart';
 
@@ -47,7 +49,11 @@ scripts:
 
 class FakeExecutor extends Executor {
   FakeExecutor({required this.exitCode, required this.executions})
-      : super(interpreter: null);
+      : super(
+          interpreter: null,
+          platform: const FakePlatform(),
+          fs: FakeFileSystem(),
+        );
 
   final int exitCode;
   final List<String> executions;
@@ -72,6 +78,7 @@ void main() {
     final run = RunCommand(
       getScriptsSource: () => MockedScriptSource(mockedPubspecYaml),
       executor: FakeExecutor(exitCode: 0, executions: executions),
+      platform: const FakePlatform(),
     );
 
     test('Correctly executes command', () async {
