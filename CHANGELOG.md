@@ -1,3 +1,7 @@
+## 0.10.1
+- Added dartdoc comments and package example.
+- Enabled stricter linting rules.
+
 ## 0.10.0
 - Calling `rps` will now display a list of all commands and allow you to select them.
 - Switched from `cmd` to `powershell` on Windows platform.

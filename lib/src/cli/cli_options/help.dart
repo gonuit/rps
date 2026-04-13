@@ -5,10 +5,15 @@ import 'package:rps/src/cli/cli.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
+/// The --help / -h option that prints usage information.
 class HelpOption extends CliOption {
+  /// Console used for output.
   final Console console;
+
+  /// Package metadata for the version header.
   final RpsPackage package;
 
+  /// Creates a [HelpOption].
   HelpOption({
     required this.console,
     required this.package,

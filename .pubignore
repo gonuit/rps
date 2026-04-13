@@ -23,3 +23,9 @@ doc/api/
 
 # Coverage reports.
 coverage/
+
+# Logo generation script.
+generate_logo.sh
+
+# Misc assets.
+stonks.jpg

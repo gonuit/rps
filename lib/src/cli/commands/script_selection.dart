@@ -5,10 +5,14 @@ import 'package:rps/src/cli/commands/command.dart';
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/src/cli/executor.dart';
 
+/// Command that presents an interactive script selection menu.
 class ScriptSelectionCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
+
+  /// The executor used to run shell commands.
   final Executor executor;
 
+  /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
     required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
@@ -51,7 +55,7 @@ class ScriptSelectionCommand implements Command {
     if (parameters.isNotEmpty) {
       for (final (index, parameter) in parameters.indexed) {
         final argument = prompts.get(
-          "Provide argument ${parameter.name}:",
+          'Provide argument ${parameter.name}:',
           chevron: false,
           validate: (arg) => true,
         );
@@ -69,6 +73,7 @@ class ScriptSelectionCommand implements Command {
   }
 }
 
+/// Prompts the user to select a command from the given [commands] list.
 CommandExecuted? selectCommand(
   Console console,
   List<CommandExecuted> commands,
@@ -84,7 +89,7 @@ CommandExecuted? selectCommand(
   }
 
   final line = prompts.get(
-    "Select script:",
+    'Select script:',
     chevron: false,
     validate: (s) {
       if (s.isEmpty) return false;

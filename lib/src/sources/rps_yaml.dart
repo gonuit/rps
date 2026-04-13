@@ -6,11 +6,16 @@ import 'package:yaml/yaml.dart';
 
 /// A script source implementation that loads scripts from the `rps.yaml` file.
 class RpsYaml implements ScriptsSource {
+  /// The expected filename.
   static const filename = 'rps.yaml';
 
+  /// The directory containing the rps.yaml file.
   final Directory directory;
+
+  /// The parsed YAML data.
   final RpsYamlData data;
 
+  /// Whether scripts are defined in the file.
   bool get hasScripts => data.scripts != null;
 
   RpsYaml._(this.directory, this.data);
@@ -23,6 +28,7 @@ class RpsYaml implements ScriptsSource {
     return rpsFile.existsSync();
   }
 
+  /// Loads and parses the rps.yaml from [directory].
   factory RpsYaml.load(Directory directory) {
     bool isScriptsFile(File file) => p.basename(file.path) == RpsYaml.filename;
 

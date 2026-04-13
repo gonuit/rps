@@ -7,7 +7,10 @@ abstract interface class Interpreter {
 
 /// Defines possible windows interpreters
 enum WindowsInterpreter implements Interpreter {
+  /// Windows Command Prompt.
   cmd('cmd'),
+
+  /// Windows PowerShell.
   powershell('powershell');
 
   @override
@@ -18,8 +21,13 @@ enum WindowsInterpreter implements Interpreter {
 
 /// Defines possible unix interpreters
 enum UnixInterpreter implements Interpreter {
+  /// Z shell.
   zsh('zsh'),
+
+  /// Bourne shell.
   sh('sh'),
+
+  /// Bash shell.
   bash('bash');
 
   @override

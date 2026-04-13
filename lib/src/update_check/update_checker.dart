@@ -6,6 +6,7 @@ import 'package:rps/src/update_check/pub_dev_api.dart';
 import 'package:rps/src/update_check/update_check_policy.dart';
 import 'package:rps/src/update_check/update_check_result.dart';
 
+/// Checks pub.dev for newer versions and manages cache / alert cooldown.
 class UpdateChecker {
   final Version _currentVersion;
   final String _packageName;
@@ -15,6 +16,7 @@ class UpdateChecker {
   final UpdateCheckPolicy _policy;
   final Duration _networkTimeout;
 
+  /// Creates an [UpdateChecker].
   UpdateChecker({
     required Version currentVersion,
     required String packageName,
@@ -31,8 +33,8 @@ class UpdateChecker {
         _policy = policy,
         _networkTimeout = networkTimeout;
 
-  // Returns a non-null result only when the alert cooldown has expired
-  // and a newer version is available. Safe to call on every invocation.
+  /// Returns a non-null result only when the alert cooldown has expired
+  /// and a newer version is available.
   Future<UpdateCheckResult?> check() async {
     final now = _clock.now();
 
@@ -50,6 +52,7 @@ class UpdateChecker {
     return result.hasUpdate ? result : null;
   }
 
+  /// Records that the update alert was shown to prevent repeated alerts.
   void markAlertShown() {
     _config.update(_config.data.copyWith(
       lastUpdateAlertAt: _clock.now(),

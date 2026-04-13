@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 
+/// The `ls` command that lists all available scripts.
 class LsCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
+  /// Creates an [LsCommand].
   LsCommand({
     required FutureOr<ScriptsSource> Function() getScriptsSource,
   }) : _getScriptsSource = getScriptsSource;

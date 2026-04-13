@@ -4,8 +4,11 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+/// Manages reading and writing the rps.config file.
 class RpsConfig {
   final File _file;
+
+  /// The current configuration data.
   RpsConfigData get data => _data;
   RpsConfigData _data;
 
@@ -15,6 +18,7 @@ class RpsConfig {
   })  : _data = data,
         _file = file;
 
+  /// Loads the config from [directory], creating a default one if missing.
   factory RpsConfig.load(Directory directory) {
     final configFile = File(p.join(directory.path, 'rps.config'));
 
@@ -36,11 +40,12 @@ class RpsConfig {
       final config = RpsConfigData.fromJson(jsonDecode(data));
       return RpsConfig._(file: configFile, data: config);
     } on Exception catch (err) {
-      stdout.write("Cannot read configuration. Fallback to default.\n$err");
+      stdout.write('Cannot read configuration. Fallback to default.\n$err');
       return createInitial();
     }
   }
 
+  /// Persists [data] to disk and updates the in-memory state.
   void update(RpsConfigData data) {
     _file.writeAsStringSync(
       const JsonEncoder.withIndent('  ').convert(data.toJson()),
@@ -50,23 +55,32 @@ class RpsConfig {
   }
 }
 
+/// Holds the serialisable configuration values.
 class RpsConfigData {
+  /// When the last update check was performed.
   final DateTime? updateCheckedAt;
+
+  /// The latest known version on pub.dev.
   final Version? latestVersion;
+
+  /// When the last update alert was shown to the user.
   final DateTime? lastUpdateAlertAt;
 
+  /// Creates a [RpsConfigData].
   RpsConfigData({
     required this.updateCheckedAt,
     required this.latestVersion,
     required this.lastUpdateAlertAt,
   });
 
+  /// Returns a config with all fields set to null.
   factory RpsConfigData.initial() => RpsConfigData(
         updateCheckedAt: null,
         latestVersion: null,
         lastUpdateAlertAt: null,
       );
 
+  /// Returns a copy with the given fields replaced.
   RpsConfigData copyWith({
     DateTime? updateCheckedAt,
     Version? latestVersion,
@@ -78,6 +92,7 @@ class RpsConfigData {
         lastUpdateAlertAt: lastUpdateAlertAt ?? this.lastUpdateAlertAt,
       );
 
+  /// Deserialises from a JSON map.
   static RpsConfigData fromJson(Map<String, dynamic> json) {
     return RpsConfigData(
       updateCheckedAt: json['updateCheckedAt'] != null
@@ -92,6 +107,7 @@ class RpsConfigData {
     );
   }
 
+  /// Serialises to a JSON map.
   Map<String, dynamic> toJson() {
     return {
       'updateCheckedAt': updateCheckedAt?.toUtc().toIso8601String(),

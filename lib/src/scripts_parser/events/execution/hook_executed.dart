@@ -1,9 +1,11 @@
 import 'package:rps/rps.dart';
 
+/// An execution event representing a hook ($before / $after) being triggered.
 class HookExecuted extends ExecutionEvent {
   @override
   final Context context;
 
+  /// The hook name (e.g. 'before' or 'after').
   final String name;
 
   @override
@@ -11,6 +13,7 @@ class HookExecuted extends ExecutionEvent {
   @override
   final String command;
 
+  /// Creates a [HookExecuted].
   HookExecuted({
     required this.context,
     required this.command,

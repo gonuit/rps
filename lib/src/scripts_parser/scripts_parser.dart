@@ -2,14 +2,25 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 
+/// Parses and resolves scripts from a [ScriptsSource].
 abstract class ScriptsParser {
+  /// Key for the before-hook entry.
   static const beforeKey = r'$before';
+
+  /// Key for the after-hook entry.
   static const afterKey = r'$after';
+
+  /// Key for the script value entry.
   static const scriptKey = r'$script';
+
+  /// Key for the description entry.
   static const descriptionKey = r'$description';
+
+  /// Key for the default platform script entry.
   static const defaultScriptKey = r'$default';
 
-  static isSpecialKey(String key) => switch (key) {
+  /// Returns `true` if [key] is a reserved special key.
+  static bool isSpecialKey(String key) => switch (key) {
         scriptKey ||
         beforeKey ||
         afterKey ||
@@ -19,9 +30,13 @@ abstract class ScriptsParser {
         _ => false,
       };
 
+  /// Lists all available commands from the scripts source.
   List<CommandExecuted> listCommands();
+
+  /// Resolves [arguments] into an ordered list of execution events.
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments);
 
+  /// Creates a [ScriptsParser] for the given [source].
   factory ScriptsParser({required ScriptsSource source}) = _ScriptParser;
 }
 

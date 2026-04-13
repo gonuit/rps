@@ -6,10 +6,14 @@ import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 
+/// The `run` command that executes a script defined in pubspec.yaml.
 class RunCommand implements Command {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
+
+  /// The executor used to run shell commands.
   final Executor executor;
 
+  /// Creates a [RunCommand].
   RunCommand({
     required this.executor,
     required FutureOr<ScriptsSource> Function() getScriptsSource,

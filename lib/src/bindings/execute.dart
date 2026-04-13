@@ -7,18 +7,24 @@ import 'package:path/path.dart' as path;
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
 
+/// Native FFI signature for the execute function.
 typedef ExecuteNative = Int32 Function(
   Pointer<Utf8> command,
   Pointer<Utf8>? interpreter,
 );
+
+/// Dart-side FFI signature for the execute function.
 typedef Execute = int Function(
   Pointer<Utf8> command,
   Pointer<Utf8>? interpreter,
 );
+
+/// Callback type for functions that execute a shell command.
 typedef ExecuteFunction = Future<int> Function(
   String command,
 );
 
+/// Executes a shell [command] via the platform-specific native library.
 Future<int> execute(
   String command, {
   bool verbose = false,
@@ -48,9 +54,9 @@ Future<int> execute(
 
   if (verbose) {
     if (interpreter != null) {
-      out?.writeln("Using interpreter: ${interpreter.value}");
+      out?.writeln('Using interpreter: ${interpreter.value}');
     } else {
-      out?.writeln("Using default interpreter");
+      out?.writeln('Using default interpreter');
     }
   }
 
@@ -62,13 +68,13 @@ Future<int> execute(
 
   final platform = Abi.current();
   if (verbose) {
-    out?.writeln("Running on platform: $platform");
+    out?.writeln('Running on platform: $platform');
   }
 
   String? libraryName = bindings[platform];
 
   if (verbose) {
-    out?.writeln("Dynamic library file selected: $libraryName");
+    out?.writeln('Dynamic library file selected: $libraryName');
   }
 
   if (libraryName == null) {
@@ -80,7 +86,7 @@ Future<int> execute(
   final libraryPath = path.join(root, libraryName);
 
   if (verbose) {
-    out?.writeln("Dynamic library path: $libraryPath");
+    out?.writeln('Dynamic library path: $libraryPath');
   }
 
   final dylib = DynamicLibrary.open(libraryPath);

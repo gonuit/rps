@@ -1,12 +1,15 @@
 import 'package:rps/rps.dart';
 import 'dart:math' as math;
 
+/// A positional argument placeholder parsed from a command string.
 class PositionalArgument {
+  /// The placeholder name (e.g. `${0}`).
   final String name;
 
   /// Index of the positional argument.
   final int index;
 
+  /// Creates a [PositionalArgument].
   PositionalArgument(
     this.name,
     this.index,
@@ -24,6 +27,7 @@ class PositionalArgument {
   }
 }
 
+/// An execution event representing a concrete command to run.
 class CommandExecuted extends ExecutionEvent {
   @override
   final String command;
@@ -48,9 +52,14 @@ class CommandExecuted extends ExecutionEvent {
 
   @override
   String get path => context.path.join(' ');
+
+  /// Optional human-readable description of this command.
   final String? description;
 
+  /// Errors encountered while parsing this command.
   final List<String> errors;
+
+  /// Returns a combined error message, or null if there are no errors.
   String? get errorMessage {
     final message = errors.whereType<String>().join('\n');
     return message.isEmpty ? null : message;
@@ -68,6 +77,7 @@ class CommandExecuted extends ExecutionEvent {
     required this.commandArguments,
   });
 
+  /// Creates a [CommandExecuted], parsing positional arguments from [command].
   factory CommandExecuted({
     required String command,
     required Context context,
@@ -107,6 +117,7 @@ class CommandExecuted extends ExecutionEvent {
     );
   }
 
+  /// Extracts positional argument placeholders from [command].
   static List<PositionalArgument> getScriptArguments(String command) {
     final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
     final arguments = <int>{};
@@ -116,8 +127,8 @@ class CommandExecuted extends ExecutionEvent {
       final argumentIndex = int.tryParse(value);
       if (argumentIndex == null) {
         throw RpsException(
-          "Bad argument script ($content). "
-          "Only positional arguments are supported.",
+          'Bad argument script ($content). '
+          'Only positional arguments are supported.',
         );
       }
       arguments.add(argumentIndex);
@@ -185,8 +196,8 @@ class CommandExecuted extends ExecutionEvent {
           final argumentIndex = int.tryParse(value);
           if (argumentIndex == null) {
             throw RpsException(
-              "Bad argument script ($content). "
-              "Only positional arguments are supported.",
+              'Bad argument script ($content). '
+              'Only positional arguments are supported.',
             );
           } else if (argumentIndex >= arguments.length) {
             throw RpsException(

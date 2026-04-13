@@ -6,7 +6,9 @@ import 'package:rps/src/cli/cli_options/cli_option.dart';
 
 import '../exceptions/cli_exception.dart';
 
+/// The --upgrade / -u option that updates rps to the latest version.
 class UpgradeOption extends CliOption {
+  /// Creates an [UpgradeOption].
   const UpgradeOption();
 
   @override

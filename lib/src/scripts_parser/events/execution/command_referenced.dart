@@ -1,9 +1,11 @@
 import 'package:rps/rps.dart';
 
+/// An execution event representing a reference to another script (via `rps`).
 class CommandReferenced extends ExecutionEvent {
   @override
   final Context context;
 
+  /// The label/key that triggered this reference.
   final String label;
 
   @override
@@ -11,8 +13,10 @@ class CommandReferenced extends ExecutionEvent {
   @override
   final String command;
 
+  /// Whether this reference originated from a hook.
   final bool isHook;
 
+  /// Creates a [CommandReferenced].
   CommandReferenced({
     required this.context,
     required this.command,

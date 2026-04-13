@@ -4,7 +4,9 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
 
+/// The --version option that prints the current rps version.
 class VersionOption extends CliOption {
+  /// Creates a [VersionOption].
   const VersionOption();
 
   @override

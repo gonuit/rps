@@ -1,7 +1,11 @@
 import 'package:collection/collection.dart';
 
+/// Represents a node in the script resolution tree.
 class Context {
+  /// The value at this node (may be a String, Map, or null).
   final dynamic current;
+
+  /// The key used to reach this node from its parent.
   final String? key;
 
   /// Parent context of this node.
@@ -20,6 +24,7 @@ class Context {
   /// Initial context node. The entry point of the run command.
   bool get isRoot => parent == null;
 
+  /// Creates a [Context].
   Context({
     required this.key,
     required this.parent,
@@ -33,6 +38,7 @@ class Context {
         isBase = true,
         key = null;
 
+  /// Returns the full key path from root to this node.
   List<String> get path {
     final path = <String>[];
 
@@ -47,6 +53,7 @@ class Context {
     return path.reversed.toList();
   }
 
+  /// Returns the key path from the nearest base node to this node.
   List<String> get basePath {
     final path = <String>[];
 
@@ -70,6 +77,7 @@ class Context {
     return context;
   }
 
+  /// Returns a child context for the given [key].
   Context next(String key) {
     return Context(
       key: key,

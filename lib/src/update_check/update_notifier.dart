@@ -9,11 +9,13 @@ import 'package:rps/src/update_check/update_check_result.dart';
 import 'package:rps/src/update_check/update_checker.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
+/// Displays a bordered update banner when a newer version is available.
 class UpdateNotifier {
   final UpdateChecker _checker;
   final Console _console;
   final Duration _postAlertPause;
 
+  /// Creates an [UpdateNotifier].
   UpdateNotifier({
     required UpdateChecker checker,
     required Console console,
@@ -22,6 +24,7 @@ class UpdateNotifier {
         _console = console,
         _postAlertPause = postAlertPause;
 
+  /// Creates an [UpdateNotifier] pre-configured for the given [package].
   factory UpdateNotifier.forPackage({
     required RpsPackage package,
     required Console console,
@@ -37,8 +40,7 @@ class UpdateNotifier {
     );
   }
 
-  // Safe to call on every invocation — network and parse errors are
-  // swallowed so a failing update check never blocks the user.
+  /// Checks for updates and shows a banner if one is available.
   Future<void> notifyIfUpdateAvailable() async {
     try {
       final result = await _checker.check();
