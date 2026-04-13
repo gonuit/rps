@@ -87,11 +87,12 @@ CommandExecuted? selectCommand(
   console.writeln('\n${bold('Which scripts do you want to run?')}');
   for (int i = 0; i < commands.length; i++) {
     final command = commands[i];
+    final cmd = command.command.replaceAll('\n', ' ').trim();
     console
-      ..write('  ${i + 1}) ')
-      ..write(lightBlue(command.path))
+      ..write('  ${green('${i + 1})')} ')
+      ..write(bold(command.path))
       ..write(' ')
-      ..writeln('(${gray(command.command)})');
+      ..writeln(gray('($cmd)'));
   }
 
   final line = prompts.get(
