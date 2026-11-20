@@ -37,16 +37,16 @@ class Cli {
       final option =
           options.firstWhereOrNull((option) => option.match(arguments));
       if (option != null) {
-        return option.run(this, console, arguments);
+        return await option.run(this, console, arguments);
       }
       final command =
           commands.firstWhereOrNull((command) => command.match(arguments));
       if (command != null) {
-        return command.run(console, arguments);
+        return await command.run(console, arguments);
       }
 
       if (fallback != null) {
-        return fallback!.run(this, console, arguments);
+        return await fallback!.run(this, console, arguments);
       }
       throw CliException('No command has been matched.');
     } catch (_) {
