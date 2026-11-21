@@ -110,6 +110,14 @@ void sharedE2eTests(RpsRunner run) {
       expect(result.exitCode, equals(1));
       expect(stripAnsi(result.stderr), contains('Error!'));
     });
+
+    test('nonexistent nested script fails without running hooks', () async {
+      final result = await run(['build', 'nonexistent']);
+
+      expect(result.exitCode, equals(1));
+      expect(stripAnsi(result.stderr), contains('Missing script'));
+      expect(stripAnsi(result.stdout), isNot(contains('flutter pub get')));
+    });
   });
 
   group('nesting', () {
