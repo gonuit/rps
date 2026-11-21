@@ -189,14 +189,75 @@ void main() {
       );
     });
 
-    test('returns empty for missing command', () {
+    test('throws for missing command', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(_missingScripts),
         platform: const FakePlatform(),
       );
 
-      final events = parser.getCommandsToExecute(['nonexistent']);
-      expect(events, isEmpty);
+      expect(
+        () => parser.getCommandsToExecute(['nonexistent']),
+        throwsA(isA<RpsException>().having(
+          (e) => e.message,
+          'message',
+          contains('"nonexistent" not found'),
+        )),
+      );
+    });
+
+    test('throws for missing nested command under hooks', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  build:
+    $before: echo before
+    $after: echo after
+    apk: echo apk
+'''),
+        platform: const FakePlatform(),
+      );
+
+      expect(
+        () => parser.getCommandsToExecute(['build', 'foo']),
+        throwsA(isA<RpsException>().having(
+          (e) => e.message,
+          'message',
+          contains('"build foo" not found'),
+        )),
+      );
+    });
+
+    test('throws for reference to missing command', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource('''
+scripts:
+  ref: rps nonexistent
+'''),
+        platform: const FakePlatform(),
+      );
+
+      expect(
+        () => parser.getCommandsToExecute(['ref']),
+        throwsA(isA<RpsException>().having(
+          (e) => e.message,
+          'message',
+          contains('"nonexistent" not found'),
+        )),
+      );
+    });
+
+    test('ignores trailing whitespace in references', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource('''
+scripts:
+  say: echo
+  trail: "rps say "
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final events = parser.getCommandsToExecute(['trail']);
+      expect((events.last as CommandExecuted).compile(), 'echo');
     });
 
     test('detects script cycle', () {

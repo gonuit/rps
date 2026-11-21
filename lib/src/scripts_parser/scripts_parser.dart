@@ -95,7 +95,7 @@ class _ScriptParser implements ScriptsParser {
               context: context,
               description: description,
               errors: [
-                'No platform script key for the command: "${context.path}". '
+                'No platform script key for the command: "${context.path.join(' ')}". '
                     'Consider adding the key for the current '
                     'platform: "$platformKey" or the default script '
                     'key: "${ScriptsParser.defaultScriptKey}".',
@@ -159,8 +159,9 @@ class _ScriptParser implements ScriptsParser {
     final current = context.current;
 
     if (current == null) {
-      // no command
-      return;
+      throw RpsException(
+        'Missing script. Command: "${context.basePath.join(' ')}" not found.',
+      );
     } else if (current is String) {
       if (context.isRoot) {
         throw RpsException(
@@ -190,7 +191,7 @@ class _ScriptParser implements ScriptsParser {
                 script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
             if (command is! String) {
               throw RpsException(
-                'No platform script key for the command: "${context.path}". '
+                'No platform script key for the command: "${context.path.join(' ')}". '
                 'Consider adding the key for the current '
                 'platform: "$platformKey" or the default script '
                 'key: "${ScriptsParser.defaultScriptKey}".',
@@ -276,7 +277,7 @@ class _ScriptParser implements ScriptsParser {
     bool isHook = false,
   }) sync* {
     if (command.startsWith(r'rps ')) {
-      final referencedCommand = command.substring(4);
+      final referencedCommand = command.substring(4).trim();
 
       yield CommandReferenced(
         command: referencedCommand,
