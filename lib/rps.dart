@@ -8,3 +8,4 @@ export 'src/exceptions/rps_exception.dart';
 export 'src/sources/pubspec.dart';
 export 'src/scripts_parser/export.dart';
 export 'src/sources/rps_yaml.dart';
+export 'src/utils/shell_quote.dart';
