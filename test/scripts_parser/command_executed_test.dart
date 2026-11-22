@@ -119,17 +119,50 @@ void main() {
         context: ctx.next('x'),
         arguments: ['hello world'],
       );
-      expect(cmd.compile(), equals('echo "hello world"'));
+      expect(cmd.compile(), equals("echo 'hello world'"));
     });
 
-    test('compile escapes quotes in arguments', () {
+    test('compile passes quotes in arguments literally', () {
       final ctx = Context.root({'x': 'echo'});
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
-        arguments: ['he"llo'],
+        arguments: ['he"llo', "it's"],
       );
-      expect(cmd.compile(), contains(r'he\"llo'));
+      expect(cmd.compile(), equals('echo \'he"llo\' ' r"'it'\''s'"));
+    });
+
+    test('compile quotes shell metacharacters and keeps empty arguments', () {
+      final ctx = Context.root({'x': 'echo'});
+      final cmd = CommandExecuted(
+        command: 'echo',
+        context: ctx.next('x'),
+        arguments: ['a&b', r'$HOME', '', 'plain-arg=1'],
+      );
+      expect(cmd.compile(), equals(r"echo 'a&b' '$HOME' '' plain-arg=1"));
+    });
+
+    test('compile quotes only arguments after positional ones', () {
+      final ctx = Context.root({'x': r'echo "${0}"'});
+      final cmd = CommandExecuted(
+        command: r'echo "${0}"',
+        context: ctx.next('x'),
+        arguments: ['a b', 'c d'],
+      );
+      expect(cmd.compile(), equals("echo \"a b\" 'c d'"));
+    });
+
+    test('compile uses the given shell syntax', () {
+      final ctx = Context.root({'x': 'echo'});
+      final cmd = CommandExecuted(
+        command: 'echo',
+        context: ctx.next('x'),
+        arguments: ["it's"],
+      );
+      expect(
+        cmd.compile(syntax: ShellSyntax.powershell),
+        equals("echo 'it''s'"),
+      );
     });
   });
 

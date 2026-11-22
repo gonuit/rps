@@ -153,27 +153,13 @@ class CommandExecuted extends ExecutionEvent {
         .toList();
   }
 
-  /// Escape backslashes, single and double quotes for shell safety
-  /// and enclose in quotes if necessary (contains spaces, quotes, or
-  /// special characters).
-  String? _serializeArguments(List<String> arguments) {
+  String? _serializeArguments(List<String> arguments, ShellSyntax syntax) {
     if (arguments.isEmpty) return null;
-
-    return arguments.map((arg) {
-      String escaped = arg
-          .replaceAll(r'\', r'\\')
-          .replaceAll('"', r'\"')
-          .replaceAll("'", r"\'");
-
-      if (escaped != arg || arg.contains(' ')) {
-        return '"$escaped"';
-      }
-      return escaped;
-    }).join(' ');
+    return arguments.map((arg) => quoteArgument(arg, syntax)).join(' ');
   }
 
   /// Compiles the command. Returns the command ready for execution.
-  String compile() {
+  String compile({ShellSyntax syntax = ShellSyntax.posix}) {
     final errorMessage = this.errorMessage;
     if (errorMessage != null) {
       throw RpsException(errorMessage);
@@ -226,10 +212,12 @@ class CommandExecuted extends ExecutionEvent {
 
       return [
         filledCommand,
-        _serializeArguments(arguments.sublist(lastUsed + 1))
+        _serializeArguments(arguments.sublist(lastUsed + 1), syntax)
       ].nonNulls.join(' ');
     } else {
-      return [command, _serializeArguments(arguments)].nonNulls.join(' ');
+      return [command, _serializeArguments(arguments, syntax)]
+          .nonNulls
+          .join(' ');
     }
   }
 
