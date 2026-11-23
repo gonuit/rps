@@ -31,10 +31,12 @@ class RpsConfig {
 
     RpsConfig createInitial() {
       final config = RpsConfigData.initial();
-      fs.writeFile(
-        configPath,
-        const JsonEncoder.withIndent('  ').convert(config.toJson()),
-      );
+      try {
+        fs.writeFile(
+          configPath,
+          const JsonEncoder.withIndent('  ').convert(config.toJson()),
+        );
+      } catch (_) {}
       return RpsConfig._(filePath: configPath, data: config, fs: fs);
     }
 
@@ -46,7 +48,7 @@ class RpsConfig {
       final data = fs.readFile(configPath);
       final config = RpsConfigData.fromJson(jsonDecode(data));
       return RpsConfig._(filePath: configPath, data: config, fs: fs);
-    } on Exception catch (err) {
+    } catch (err) {
       out?.write('Cannot read configuration. Fallback to default.\n$err');
       return createInitial();
     }
