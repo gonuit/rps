@@ -1,10 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 import 'package:rps/src/config/rps_config.dart';
 import 'package:test/test.dart';
 
 import '../mocks/fake_file_system.dart';
+
+class _ReadOnlyFileSystem extends FakeFileSystem {
+  @override
+  void writeFile(String path, String contents) {
+    throw const FileSystemException('Read-only file system');
+  }
+}
 
 void main() {
   group('RpsConfig', () {
@@ -51,6 +59,22 @@ void main() {
 
       expect(config.data.latestVersion, isNull);
       expect(out.toString(), contains('Cannot read configuration'));
+    });
+
+    test('falls back to initial when file is not a JSON object', () {
+      final fs = FakeFileSystem(
+        files: {'/pkg/rps.config': '[]'},
+      );
+
+      final config = RpsConfig.load('/pkg', fs: fs);
+
+      expect(config.data.latestVersion, isNull);
+    });
+
+    test('loads in-memory config when the directory is read-only', () {
+      final config = RpsConfig.load('/pkg', fs: _ReadOnlyFileSystem());
+
+      expect(config.data.latestVersion, isNull);
     });
 
     test('update persists data', () {

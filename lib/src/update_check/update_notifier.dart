@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
-import 'package:http/http.dart' as http;
 
 import 'package:rps/rps.dart';
 import 'package:rps/src/update_check/clock.dart';
@@ -51,19 +48,7 @@ class UpdateNotifier {
       _render(result);
       _checker.markAlertShown();
       await Future.delayed(_postAlertPause);
-    } on SocketException {
-      // Network unreachable.
-    } on HttpException {
-      // HTTP protocol error.
-    } on http.ClientException {
-      // DNS / connection refused.
-    } on TimeoutException {
-      // Network timeout from UpdateChecker.
-    } on FormatException {
-      // Malformed JSON or version string from pub.dev.
-    } on PubDevApiException {
-      // pub.dev returned a non-200.
-    }
+    } catch (_) {}
   }
 
   void _render(UpdateCheckResult result) {

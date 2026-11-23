@@ -17,5 +17,7 @@ void main(List<String> args) async {
     fs: const SystemFileSystem(),
     clock: const SystemClock(),
   );
-  if (exitCode != 0) exit(exitCode);
+  await stdout.flush();
+  await stderr.flush();
+  exit(exitCode);
 }
