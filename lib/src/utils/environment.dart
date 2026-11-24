@@ -12,5 +12,11 @@ class SystemEnvironment implements Environment {
   const SystemEnvironment();
 
   @override
-  bool get isCI => Platform.environment['CI']?.isNotEmpty ?? false;
+  bool get isCI => isCIValue(Platform.environment['CI']);
+
+  /// Whether [value] of the `CI` variable marks a CI environment.
+  static bool isCIValue(String? value) {
+    final normalized = value?.trim().toLowerCase() ?? '';
+    return normalized.isNotEmpty && normalized != 'false' && normalized != '0';
+  }
 }
