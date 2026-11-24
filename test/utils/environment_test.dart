@@ -16,6 +16,20 @@ void main() {
       expect(const FakeEnvironment(isCI: false).isCI, isFalse);
     });
 
+    test('isCIValue treats set values as CI', () {
+      expect(SystemEnvironment.isCIValue('true'), isTrue);
+      expect(SystemEnvironment.isCIValue('1'), isTrue);
+      expect(SystemEnvironment.isCIValue('woodpecker'), isTrue);
+    });
+
+    test('isCIValue treats missing, empty and falsy values as not CI', () {
+      expect(SystemEnvironment.isCIValue(null), isFalse);
+      expect(SystemEnvironment.isCIValue(''), isFalse);
+      expect(SystemEnvironment.isCIValue('false'), isFalse);
+      expect(SystemEnvironment.isCIValue('FALSE'), isFalse);
+      expect(SystemEnvironment.isCIValue('0'), isFalse);
+    });
+
     test('SystemEnvironment can be constructed', () {
       const env = SystemEnvironment();
       expect(env.isCI, isA<bool>());
