@@ -17,6 +17,9 @@ class _CiEnvironment implements Environment {
 
   @override
   bool get isCI => _isCI;
+
+  @override
+  bool get hasTerminal => true;
 }
 
 class _NoOpExecutor extends Executor {
