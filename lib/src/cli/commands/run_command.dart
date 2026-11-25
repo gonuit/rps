@@ -47,6 +47,21 @@ class RunCommand implements Command {
     return arguments.isNotEmpty;
   }
 
+  List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
+    if (arguments.firstOrNull != name) {
+      return parser.getCommandsToExecute(arguments);
+    }
+    try {
+      // Remove command name (run) from arguments list
+      return parser.getCommandsToExecute(arguments.skip(1).toList());
+    } on RpsException {
+      try {
+        return parser.getCommandsToExecute(arguments);
+      } on RpsException catch (_) {}
+      rethrow;
+    }
+  }
+
   @override
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
@@ -54,10 +69,7 @@ class RunCommand implements Command {
 
     final List<ExecutionEvent> events;
     try {
-      /// Remove command name (run) from arguments list
-      events = parser.getCommandsToExecute(arguments.firstOrNull == name
-          ? arguments.skip(1).toList()
-          : arguments);
+      events = _resolve(parser, arguments);
     } on ScriptParserException catch (err) {
       throw RpsException(err.message, err);
     }

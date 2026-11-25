@@ -4,12 +4,18 @@ import 'dart:io';
 abstract interface class Environment {
   /// Whether the process is running in a CI environment.
   bool get isCI;
+
+  /// Whether stdin is attached to a terminal, so the user can be prompted.
+  bool get hasTerminal;
 }
 
 /// Default [Environment] backed by platform environment variables.
 class SystemEnvironment implements Environment {
   /// Creates a [SystemEnvironment].
   const SystemEnvironment();
+
+  @override
+  bool get hasTerminal => stdin.hasTerminal;
 
   @override
   bool get isCI => isCIValue(Platform.environment['CI']);

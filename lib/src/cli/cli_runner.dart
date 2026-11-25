@@ -61,7 +61,7 @@ Future<int> runCli(
       package: package,
       console: console,
       commands: [
-        if (!environment.isCI)
+        if (!environment.isCI && environment.hasTerminal)
           ScriptSelectionCommand(
             getScriptsSource: getScriptSource,
             executor: executor,

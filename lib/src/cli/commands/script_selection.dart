@@ -44,6 +44,10 @@ class ScriptSelectionCommand implements Command {
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
 
+    if (commands.isEmpty) {
+      throw RpsException('No scripts found.');
+    }
+
     final selected = selectCommand(console, commands);
     if (selected == null) {
       throw RpsException('Script not selected.');
@@ -69,7 +73,7 @@ class ScriptSelectionCommand implements Command {
       console.writeln();
     }
 
-    final runCommandArguments = selected.context.path + arguments;
+    final runCommandArguments = ['run', ...selected.context.path, ...arguments];
 
     await RunCommand(
       executor: executor,

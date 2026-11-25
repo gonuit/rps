@@ -7,6 +7,9 @@ class FakeEnvironment implements Environment {
 
   @override
   bool get isCI => _isCI;
+
+  @override
+  bool get hasTerminal => true;
 }
 
 void main() {
