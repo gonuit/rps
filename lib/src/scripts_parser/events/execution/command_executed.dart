@@ -87,7 +87,6 @@ class CommandExecuted extends ExecutionEvent {
     bool isHook = false,
     List<String>? errors,
   }) {
-    final args = arguments ?? const [];
     final errorsList = errors != null ? List<String>.of(errors) : <String>[];
     List<PositionalArgument>? scriptArguments;
     try {
@@ -95,16 +94,6 @@ class CommandExecuted extends ExecutionEvent {
     } on RpsException catch (err) {
       errorsList.add(err.message);
       scriptArguments = const [];
-    }
-
-    if (scriptArguments.isNotEmpty &&
-        args.length > scriptArguments.last.index) {
-      final path = context.path.join(' ');
-      errors?.add(
-        'The script "$path" defines a positional argument '
-        '${scriptArguments.last.name}, but ${args.length} '
-        'positional argument(s) are given.',
-      );
     }
 
     return CommandExecuted._internal(
@@ -200,7 +189,7 @@ class CommandExecuted extends ExecutionEvent {
       );
 
       final lastUsed = usedArguments.reduce(math.max);
-      if (lastUsed > usedArguments.length) {
+      if (lastUsed >= usedArguments.length) {
         final unusedArguments = List<int>.generate(lastUsed, (index) => index)
             .where((e) => !usedArguments.contains(e));
 

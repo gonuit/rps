@@ -41,7 +41,7 @@ class UpgradeOption extends CliOption {
       platform: _platform,
       fs: _fs,
     );
-    if (exitCode > 0) {
+    if (exitCode != 0) {
       throw CliException(
         'Failed to update the rps package. '
         'Command ended with a non zero exit code.',
