@@ -47,7 +47,8 @@ class RpsYaml implements ScriptsSource {
     try {
       final string = fs.readFile(rpsPath);
       final parsed = loadYaml(string);
-      final data = RpsYamlData.fromYaml(parsed);
+      final data =
+          parsed == null ? const RpsYamlData() : RpsYamlData.fromYaml(parsed);
 
       return RpsYaml._(directoryPath, data);
     } on RpsException {

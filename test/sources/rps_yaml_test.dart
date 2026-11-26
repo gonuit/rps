@@ -36,6 +36,16 @@ void main() {
       expect(rpsYaml.directoryPath, equals('/project'));
     });
 
+    test('empty rps.yaml loads with no scripts', () {
+      final fs = FakeFileSystem(
+        files: {'/project/rps.yaml': ''},
+      );
+
+      final rpsYaml = RpsYaml.load('/project', fs: fs);
+
+      expect(rpsYaml.hasScripts, isFalse);
+    });
+
     test('getScripts returns scripts map', () {
       final fs = FakeFileSystem(
         files: {'/project/rps.yaml': _validRpsYaml},
