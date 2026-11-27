@@ -25,7 +25,6 @@ sealed class Shell {
     return switch (interpreter) {
       null => platform.isWindows ? const PowerShell() : const PosixShell(),
       WindowsInterpreter.powershell => const PowerShell(),
-      WindowsInterpreter.cmd => const CmdShell(),
       _ => PosixShell(interpreter.value),
     };
   }
@@ -80,51 +79,5 @@ class PowerShell extends Shell {
     if (_safe.hasMatch(argument)) return argument;
     final escaped = argument.replaceAll("'", "''").replaceAll('"', r'\"');
     return "'$escaped'";
-  }
-}
-
-/// Windows Command Prompt.
-class CmdShell extends Shell {
-  static final _needsQuotes = RegExp('[ \t\n\v"]');
-  static final _metaChars = RegExp(r'[ !%^&()<>|"]');
-
-  /// Creates a [CmdShell].
-  const CmdShell();
-
-  @override
-  String get executable => 'cmd';
-
-  @override
-  List<String> arguments(String command) => ['/c', command];
-
-  @override
-  String quote(String argument) {
-    if (argument.isEmpty) return '""';
-
-    var result = argument;
-    if (_needsQuotes.hasMatch(argument)) {
-      final buffer = StringBuffer('"');
-      var i = 0;
-      while (true) {
-        var slashes = 0;
-        while (i < argument.length && argument[i] == r'\') {
-          i++;
-          slashes++;
-        }
-        if (i == argument.length) {
-          buffer.write(r'\' * (slashes * 2));
-          break;
-        }
-        final escapes = argument[i] == '"' ? slashes * 2 + 1 : slashes;
-        buffer
-          ..write(r'\' * escapes)
-          ..write(argument[i]);
-        i++;
-      }
-      buffer.write('"');
-      result = buffer.toString();
-    }
-
-    return result.replaceAllMapped(_metaChars, (m) => '^${m[0]}');
   }
 }

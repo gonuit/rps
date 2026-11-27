@@ -60,32 +60,6 @@ void main() {
     });
   });
 
-  group('CmdShell.quote', () {
-    String quote(String arg) => const CmdShell().quote(arg);
-
-    test('leaves safe arguments untouched', () {
-      expect(quote('--flavor=prod'), '--flavor=prod');
-    });
-
-    test('quotes empty argument', () {
-      expect(quote(''), '""');
-    });
-
-    test('quotes spaces', () {
-      expect(quote('hello world'), '^"hello^ world^"');
-    });
-
-    test('escapes metacharacters', () {
-      expect(quote('a&b'), 'a^&b');
-      expect(quote('100%'), '100^%');
-    });
-
-    test('escapes double quotes and trailing backslashes', () {
-      expect(quote('he"llo'), r'^"he\^"llo^"');
-      expect(quote(r'a b\'), r'^"a^ b\\^"');
-    });
-  });
-
   group('Shell.of', () {
     test('defaults to bash on Linux and macOS', () {
       final linux = Shell.of(null, const FakePlatform.linux());
@@ -107,19 +81,21 @@ void main() {
 
     test('uses the configured interpreter', () {
       final zsh = Shell.of(UnixInterpreter.zsh, const FakePlatform());
-      final cmd = Shell.of(
-        WindowsInterpreter.cmd,
+      final powershell = Shell.of(
+        WindowsInterpreter.powershell,
         const FakePlatform.windows(),
       );
 
       expect(zsh.executable, equals('zsh'));
-      expect(cmd.executable, equals('cmd'));
-      expect(cmd.arguments('echo hi'), equals(['/c', 'echo hi']));
+      expect(powershell, isA<PowerShell>());
     });
 
     test('rejects a Windows interpreter on other platforms', () {
       expect(
-        () => Shell.of(WindowsInterpreter.cmd, const FakePlatform.linux()),
+        () => Shell.of(
+          WindowsInterpreter.powershell,
+          const FakePlatform.linux(),
+        ),
         throwsA(isA<RpsException>()),
       );
     });

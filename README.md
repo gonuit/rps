@@ -248,11 +248,9 @@ Using `rps.yaml` allows you to keep your `pubspec.yaml` file focused on dependen
 
 ### Picking an interpreter
 
-The same `rps.yaml` lets you choose the shell that runs your scripts on each platform:
+The same `rps.yaml` lets you choose the shell that runs your scripts on Linux and macOS. On Windows scripts always run in PowerShell.
 
 ```yaml
-windows:
-  interpreter: cmd        # cmd | powershell (default)
 linux:
   interpreter: zsh        # bash (default) | sh | zsh
 macos:

@@ -6,9 +6,6 @@ abstract interface class Interpreter {
 
 /// Defines possible windows interpreters
 enum WindowsInterpreter implements Interpreter {
-  /// Windows Command Prompt.
-  cmd('cmd'),
-
   /// Windows PowerShell.
   powershell('powershell');
 

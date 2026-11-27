@@ -65,6 +65,18 @@ void main() {
         expect(badScript.exitCode, equals(78));
       });
 
+      test('the removed cmd interpreter exits with 78', () async {
+        final result = await _runIn(
+          'name: app\n',
+          ['hello'],
+          rpsYaml: 'windows:\n  interpreter: cmd\n'
+              'scripts:\n  hello: echo hello\n',
+        );
+
+        expect(result.exitCode, equals(78));
+        expect(result.stderr, contains('no longer supported'));
+      });
+
       test('a missing pubspec exits with 78', () async {
         final directory = Directory.systemTemp.createTempSync('rps_e2e_');
         addTearDown(() => directory.deleteSync(recursive: true));
@@ -121,40 +133,6 @@ void main() {
           equals(arguments),
         );
       });
-
-      test(
-        'passes arguments literally with the cmd interpreter',
-        () async {
-          final result = await _runIn(
-            'name: app\n',
-            ['args', ...arguments],
-            rpsYaml: 'windows:\n  interpreter: cmd\n'
-                'scripts:\n  args: $printArgs\n',
-          );
-
-          expect(result.exitCode, equals(0), reason: '${result.stderr}');
-          expect(
-            jsonDecode((result.stdout as String).trim().split('\n').last),
-            equals(arguments),
-          );
-        },
-        testOn: 'windows',
-      );
-
-      test(
-        'the cmd interpreter passes the exit code through',
-        () async {
-          final result = await _runIn(
-            'name: app\n',
-            ['fail'],
-            rpsYaml: 'windows:\n  interpreter: cmd\n'
-                'scripts:\n  fail: exit 7\n',
-          );
-
-          expect(result.exitCode, equals(7));
-        },
-        testOn: 'windows',
-      );
 
       test(
         'the script reads piped stdin',

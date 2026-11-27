@@ -21,9 +21,21 @@ void main() {
     });
 
     test('fromYaml parses windows config', () {
-      final yaml = loadYaml('windows:\n  interpreter: cmd\n') as YamlMap;
+      final yaml = loadYaml('windows:\n  interpreter: powershell\n') as YamlMap;
       final data = RpsYamlData.fromYaml(yaml);
-      expect(data.windows.interpreter, equals(WindowsInterpreter.cmd));
+      expect(data.windows.interpreter, equals(WindowsInterpreter.powershell));
+    });
+
+    test('fromYaml rejects the removed cmd interpreter', () {
+      final yaml = loadYaml('windows:\n  interpreter: cmd\n') as YamlMap;
+      expect(
+        () => RpsYamlData.fromYaml(yaml),
+        throwsA(isA<RpsConfigException>().having(
+          (e) => e.message,
+          'message',
+          contains('"cmd" interpreter is no longer supported'),
+        )),
+      );
     });
 
     test('fromYaml parses linux config', () {
@@ -58,10 +70,10 @@ void main() {
   group('GetInterpreter', () {
     test('returns windows interpreter on windows', () {
       const data = RpsYamlData(
-        windows: WindowsConfig(interpreter: WindowsInterpreter.cmd),
+        windows: WindowsConfig(interpreter: WindowsInterpreter.powershell),
       );
       final result = data.getInterpreter(const FakePlatform.windows());
-      expect(result, equals(WindowsInterpreter.cmd));
+      expect(result, equals(WindowsInterpreter.powershell));
     });
 
     test('returns macos interpreter on macos', () {
