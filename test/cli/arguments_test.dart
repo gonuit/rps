@@ -61,15 +61,19 @@ void main() {
       expect(RpsArguments.parse(['test', '--all']).all, isFalse);
     });
 
-    test('reads --continue only with --all', () {
+    test('reads --continue and --parallel only with --all', () {
       final arguments = RpsArguments.parse(['--all', '--continue', 'test']);
 
       expect(arguments.continueOnError, isTrue);
       expect(arguments.script, equals(['test']));
-      expect(
-        () => RpsArguments.parse(['--continue', 'test']),
-        throwsA(isA<RpsUsageException>()),
-      );
+      expect(RpsArguments.parse(['-a', '--parallel', 'test']).parallel, isTrue);
+      for (final option in ['--continue', '--parallel']) {
+        expect(
+          () => RpsArguments.parse([option, 'test']),
+          throwsA(isA<RpsUsageException>()),
+          reason: option,
+        );
+      }
     });
 
     test('rejects --all without a script', () {

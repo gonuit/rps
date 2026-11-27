@@ -20,6 +20,9 @@ class ParallelExecuted extends ExecutionEvent {
   /// The commands run at the same time.
   final List<ParallelBranch> branches;
 
+  /// Whether the other commands are stopped when one fails.
+  final bool failFast;
+
   @override
   String get path => context.basePath.join(' ');
 
@@ -27,5 +30,9 @@ class ParallelExecuted extends ExecutionEvent {
   String? get command => null;
 
   /// Creates a [ParallelExecuted].
-  ParallelExecuted({required this.context, required this.branches});
+  ParallelExecuted({
+    required this.context,
+    required this.branches,
+    this.failFast = true,
+  });
 }

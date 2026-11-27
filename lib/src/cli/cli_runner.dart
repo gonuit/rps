@@ -81,6 +81,7 @@ Future<int> runCli(
         await RunAllCommand(
           runner: runner,
           continueOnError: arguments.continueOnError,
+          parallel: arguments.parallel,
           workspace: Workspace.find(fs),
           fs: fs,
           platform: platform,

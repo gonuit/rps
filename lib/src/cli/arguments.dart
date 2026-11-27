@@ -32,6 +32,7 @@ class RpsArguments {
   static const _yes = 'yes';
   static const _all = 'all';
   static const _continue = 'continue';
+  static const _parallel = 'parallel';
   static const _json = 'json';
   static const _ls = 'ls';
   static const _run = 'run';
@@ -60,6 +61,11 @@ class RpsArguments {
       _continue,
       negatable: false,
       help: 'With --all, keeps going after the script fails in a package.',
+    )
+    ..addFlag(
+      _parallel,
+      negatable: false,
+      help: 'With --all, runs the packages at the same time.',
     )
     ..addFlag(
       _noColor,
@@ -108,6 +114,9 @@ class RpsArguments {
   /// Whether a workspace run keeps going after a package fails.
   final bool continueOnError;
 
+  /// Whether a workspace run starts all packages at the same time.
+  final bool parallel;
+
   /// Whether scripts are listed as JSON.
   final bool json;
 
@@ -122,6 +131,7 @@ class RpsArguments {
     this.yes = false,
     this.all = false,
     this.continueOnError = false,
+    this.parallel = false,
     this.json = false,
     this.script = const [],
   });
@@ -163,7 +173,10 @@ class RpsArguments {
     final dryRun = flag(_dryRun);
     final yes = flag(_yes);
     final all = flag(_all);
-    final workspaceOptions = {_continue: flag(_continue)};
+    final workspaceOptions = {
+      _continue: flag(_continue),
+      _parallel: flag(_parallel),
+    };
     for (final MapEntry(key: name, value: isSet) in workspaceOptions.entries) {
       if (isSet && !all) {
         throw RpsUsageException(
@@ -184,6 +197,7 @@ class RpsArguments {
         action: action,
         all: all,
         continueOnError: workspaceOptions[_continue]!,
+        parallel: workspaceOptions[_parallel]!,
         noColor: noColor,
         dryRun: dryRun,
         yes: yes,

@@ -287,14 +287,22 @@ class ScriptRunner {
     ];
 
     (Object, StackTrace)? failure;
+    final failed = <String>[];
     Future<void> runBranch(int index) async {
+      final branch = branches[index];
       try {
-        await _run(event.branches[index].events, branches[index]);
+        await _run(event.branches[index].events, branch);
       } on _Cancelled {
         return;
       } catch (error, stackTrace) {
         failure ??= (error, stackTrace);
-        stop();
+        failed.add(branch.label);
+        if (event.failFast) {
+          stop();
+        } else {
+          final message = error is RpsException ? error.message : '$error';
+          errors.writeln('${branch.prefix} ${boldRed('Error!')} $message');
+        }
       }
     }
 
@@ -309,7 +317,11 @@ class ScriptRunner {
     }
 
     if (failure case (final error, final stackTrace)) {
-      Error.throwWithStackTrace(error, stackTrace);
+      if (event.failFast) Error.throwWithStackTrace(error, stackTrace);
+      throw ScriptFailedException(
+        '${failed.length} of $count failed: ${failed.join(', ')}.',
+        exitCode: error is RpsException ? error.exitCode : ExitCodes.error,
+      );
     }
     if (parent != null && parent.isCancelled) throw const _Cancelled();
     if (parent == null) console.writeln();

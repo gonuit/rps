@@ -169,6 +169,82 @@ void main() {
       });
     });
 
+    group('workspace', () {
+      const where = "import 'dart:io';\n"
+          'void main(List<String> args) {\n'
+          '  final env = Platform.environment;\n'
+          '  final name = Directory.current.uri.pathSegments.reversed.skip(1).first;\n'
+          "  stdout.writeln('<\$name|\${env['WHO']}|\${args.join(',')}>');\n"
+          '  if (args.contains(name)) exit(5);\n'
+          '}\n';
+      const root = 'name: root\nworkspace:\n  - packages/*\n'
+          'scripts:\n  where: dart where.dart\n';
+      const files = {
+        'packages/app/pubspec.yaml': 'name: app\ndependencies:\n  core: any\n'
+            'scripts:\n  where: dart where.dart\n',
+        'packages/app/where.dart': where,
+        'packages/core/pubspec.yaml': 'name: core\n',
+        'packages/core/rps.yaml': 'scripts:\n  \$envFile: .env\n'
+            '  where: dart where.dart\n',
+        'packages/core/.env': 'WHO=core-env',
+        'packages/core/where.dart': where,
+        'packages/docs/pubspec.yaml': 'name: docs\n',
+      };
+
+      test('--all runs the script in each package, dependencies first',
+          () async {
+        final result =
+            await _runIn(root, ['--all', 'where', 'x'], files: files);
+        final output = result.stdout as String;
+
+        expect(result.exitCode, equals(0), reason: '${result.stderr}');
+        expect(output, contains('<core|core-env|x>'));
+        expect(output, contains('<app|null|x>'));
+        expect(output.indexOf('<core|'), lessThan(output.indexOf('<app|')));
+        expect(output, contains('Ran "where x" in 2 package(s).'));
+      });
+
+      test('--all stops at a failed package unless --continue is given',
+          () async {
+        final stopped =
+            await _runIn(root, ['-a', 'where', 'core'], files: files);
+        final continued = await _runIn(
+          root,
+          ['-a', '--continue', 'where', 'core'],
+          files: files,
+        );
+
+        expect(stopped.exitCode, equals(5));
+        expect(stopped.stdout, isNot(contains('<app|')));
+        expect(
+            stopped.stderr, contains('1 of 2 package(s): core. Not run: app.'));
+        expect(continued.exitCode, equals(5));
+        expect(continued.stdout, contains('<app|null|core>'));
+      });
+
+      test('--all --parallel labels the output with the package', () async {
+        final result = await _runIn(
+          root,
+          ['--all', '--parallel', 'where'],
+          files: files,
+        );
+
+        expect(result.exitCode, equals(0), reason: '${result.stderr}');
+        expect(result.stdout, contains('[core] <core|core-env|>'));
+        expect(result.stdout, contains('[app ] <app|null|>'));
+      });
+
+      test(
+          '--all fails with 64 when no package has the script and with 78 '
+          'outside of a workspace', () async {
+        final missing = await _runIn(root, ['--all', 'nope'], files: files);
+        final outside = await _runIn('name: app\n', ['--all', 'where']);
+
+        expect(missing.exitCode, equals(64));
+        expect(outside.exitCode, equals(78));
+      });
+    });
+
     group('environment', () {
       const printEnv = "import 'dart:io';\n"
           'void main() {\n'

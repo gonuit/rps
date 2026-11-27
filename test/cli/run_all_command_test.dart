@@ -37,6 +37,7 @@ Future<_Run> _run(
   FakeExecutor? executor,
   bool dryRun = false,
   bool continueOnError = false,
+  bool parallel = false,
   bool interactive = false,
   Prompt? prompt,
   String cwd = '/ws',
@@ -60,6 +61,7 @@ Future<_Run> _run(
       processEnvironment: const {},
     ),
     continueOnError: continueOnError,
+    parallel: parallel,
     workspace: Workspace.find(fs),
     fs: fs,
     platform: const FakePlatform(),
@@ -143,6 +145,52 @@ void main() {
         ),
       );
       expect(run.executor.executions, equals(['echo core x', 'echo app x']));
+    });
+
+    test('labels the output of packages run in parallel', () async {
+      final run = await _run(['test', 'x'], parallel: true);
+
+      expect(
+        run.executor.executions,
+        unorderedEquals(['echo core x', 'echo app x']),
+      );
+      expect(
+        run.output.toString(),
+        allOf(
+          contains('> test x (2 in parallel)'),
+          contains(r'[core] $ echo core x'),
+          contains(r'[app ] $ echo app x'),
+          contains('✓ Ran "test x" in 2 package(s).'),
+        ),
+      );
+    });
+
+    test('reports every package that fails in parallel with continueOnError',
+        () async {
+      final run =
+          _Run(FakeExecutor(exitCode: 3), StringBuffer(), StringBuffer());
+
+      await expectLater(
+        _run(['test', 'x'], parallel: true, continueOnError: true, into: run),
+        throwsA(
+          isA<ScriptFailedException>()
+              .having((e) => e.exitCode, 'exitCode', 3)
+              .having((e) => e.message, 'message', '2 of 2 failed: core, app.'),
+        ),
+      );
+      expect(run.errors.toString(), contains('[app ] Error!'));
+    });
+
+    test('stops after an interrupted package even with continueOnError',
+        () async {
+      final run =
+          _Run(FakeExecutor(exitCode: 130), StringBuffer(), StringBuffer());
+
+      await expectLater(
+        _run(['test', 'x'], continueOnError: true, into: run),
+        throwsA(isA<ScriptFailedException>()),
+      );
+      expect(run.executor.executions, equals(['echo core x']));
     });
 
     test('runs nothing when a package has a broken script', () async {
