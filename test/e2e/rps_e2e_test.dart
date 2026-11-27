@@ -214,11 +214,13 @@ void main() {
           files: files,
         );
 
-        expect(stopped.exitCode, equals(5));
+        // PowerShell reports a failed program as 1.
+        final failure = Platform.isWindows ? 1 : 5;
+        expect(stopped.exitCode, equals(failure));
         expect(stopped.stdout, isNot(contains('<app|')));
         expect(
             stopped.stderr, contains('1 of 2 package(s): core. Not run: app.'));
-        expect(continued.exitCode, equals(5));
+        expect(continued.exitCode, equals(failure));
         expect(continued.stdout, contains('<app|null|core>'));
       });
 
