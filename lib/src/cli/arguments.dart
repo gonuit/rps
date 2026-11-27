@@ -31,6 +31,7 @@ class RpsArguments {
   static const _noColor = 'no-color';
   static const _yes = 'yes';
   static const _all = 'all';
+  static const _continue = 'continue';
   static const _json = 'json';
   static const _ls = 'ls';
   static const _run = 'run';
@@ -54,6 +55,11 @@ class RpsArguments {
       negatable: false,
       help: 'Runs the script in every package of the pub workspace that '
           'defines it.',
+    )
+    ..addFlag(
+      _continue,
+      negatable: false,
+      help: 'With --all, keeps going after the script fails in a package.',
     )
     ..addFlag(
       _noColor,
@@ -99,6 +105,9 @@ class RpsArguments {
   /// Whether the script runs in every package of the workspace.
   final bool all;
 
+  /// Whether a workspace run keeps going after a package fails.
+  final bool continueOnError;
+
   /// Whether scripts are listed as JSON.
   final bool json;
 
@@ -112,6 +121,7 @@ class RpsArguments {
     this.dryRun = false,
     this.yes = false,
     this.all = false,
+    this.continueOnError = false,
     this.json = false,
     this.script = const [],
   });
@@ -153,6 +163,15 @@ class RpsArguments {
     final dryRun = flag(_dryRun);
     final yes = flag(_yes);
     final all = flag(_all);
+    final workspaceOptions = {_continue: flag(_continue)};
+    for (final MapEntry(key: name, value: isSet) in workspaceOptions.entries) {
+      if (isSet && !all) {
+        throw RpsUsageException(
+          'The --$name option works only with --$_all.',
+          hint: 'Use it as "rps --$_all --$name <script>".',
+        );
+      }
+    }
 
     RpsArguments build(RpsAction action, {List<String> script = const []}) {
       if (all && (action == RpsAction.select || action == RpsAction.list)) {
@@ -164,6 +183,7 @@ class RpsArguments {
       return RpsArguments(
         action: action,
         all: all,
+        continueOnError: workspaceOptions[_continue]!,
         noColor: noColor,
         dryRun: dryRun,
         yes: yes,

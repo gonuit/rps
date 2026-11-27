@@ -36,6 +36,7 @@ Future<_Run> _run(
   Map<String, String>? files,
   FakeExecutor? executor,
   bool dryRun = false,
+  bool continueOnError = false,
   bool interactive = false,
   Prompt? prompt,
   String cwd = '/ws',
@@ -58,6 +59,7 @@ Future<_Run> _run(
       fs: fs,
       processEnvironment: const {},
     ),
+    continueOnError: continueOnError,
     workspace: Workspace.find(fs),
     fs: fs,
     platform: const FakePlatform(),
@@ -122,6 +124,25 @@ void main() {
       );
       expect(run.executor.executions, equals(['echo core x']));
       expect(run.errors.toString(), contains('non zero exit code (3)'));
+    });
+
+    test('runs the remaining packages with continueOnError', () async {
+      final run =
+          _Run(FakeExecutor(exitCode: 3), StringBuffer(), StringBuffer());
+
+      await expectLater(
+        _run(['test', 'x'], continueOnError: true, into: run),
+        throwsA(
+          isA<ScriptFailedException>()
+              .having((e) => e.exitCode, 'exitCode', 3)
+              .having(
+                (e) => e.message,
+                'message',
+                'The script "test x" failed in 2 of 2 package(s): core, app.',
+              ),
+        ),
+      );
+      expect(run.executor.executions, equals(['echo core x', 'echo app x']));
     });
 
     test('runs nothing when a package has a broken script', () async {

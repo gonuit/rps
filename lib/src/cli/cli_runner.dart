@@ -80,6 +80,7 @@ Future<int> runCli(
       case RpsAction.run when arguments.all:
         await RunAllCommand(
           runner: runner,
+          continueOnError: arguments.continueOnError,
           workspace: Workspace.find(fs),
           fs: fs,
           platform: platform,

@@ -6,6 +6,9 @@ class RunAllCommand {
   /// Runs the commands of the scripts.
   final ScriptRunner runner;
 
+  /// Whether the packages after a failed one still run.
+  final bool continueOnError;
+
   final Workspace _workspace;
   final FileSystem _fs;
   final Platform _platform;
@@ -13,6 +16,7 @@ class RunAllCommand {
   /// Creates a [RunAllCommand].
   RunAllCommand({
     required this.runner,
+    this.continueOnError = false,
     required Workspace workspace,
     required FileSystem fs,
     required Platform platform,
@@ -100,6 +104,7 @@ class RunAllCommand {
         runner.errors.writeln('${boldRed('Error!')} ${error.message}');
         failed.add(package.name);
         exitCode ??= error.exitCode;
+        if (continueOnError) continue;
         notRun = [for (final (rest, _) in plans.skip(index + 1)) rest.name];
         break;
       }
