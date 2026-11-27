@@ -8,17 +8,20 @@ class FakeExecutor extends Executor {
   final int exitCode;
   final List<String> executions;
   final List<String?> workingDirectories = [];
+  final List<Shell?> shells = [];
   final List<Map<String, String>?> environments = [];
 
   @override
   Future<int> execute(
     String command, {
+    Shell? shell,
     Map<String, String>? environment,
     String? workingDirectory,
     CommandOutput? output,
   }) async {
     executions.add(command);
     workingDirectories.add(workingDirectory);
+    shells.add(shell);
     environments.add(environment);
     return exitCode;
   }

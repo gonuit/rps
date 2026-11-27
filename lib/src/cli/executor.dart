@@ -8,16 +8,18 @@ class Executor {
   /// Creates an [Executor].
   Executor({required this.shell});
 
-  /// Executes the given shell [command] and returns the exit code.
+  /// Executes [command] in [shell], or in the configured one, and returns
+  /// the exit code.
   Future<int> execute(
     String command, {
+    rps.Shell? shell,
     Map<String, String>? environment,
     String? workingDirectory,
     rps.CommandOutput? output,
   }) {
     return rps.execute(
       command,
-      shell: shell,
+      shell: shell ?? this.shell,
       environment: environment,
       workingDirectory: workingDirectory,
       output: output,

@@ -17,6 +17,7 @@ class _ScriptedExecutor extends Executor {
   @override
   Future<int> execute(
     String command, {
+    Shell? shell,
     Map<String, String>? environment,
     String? workingDirectory,
     CommandOutput? output,

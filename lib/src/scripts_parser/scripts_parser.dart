@@ -60,12 +60,17 @@ class ScriptsParser {
 
   final ScriptsSource _source;
   final ScriptsAnalyzer _analyzer;
+  final ExecutionSettings _settings;
 
   /// Creates a [ScriptsParser] for the given [source].
+  ///
+  /// Every script starts from [settings].
   ScriptsParser({
     required ScriptsSource source,
     required Platform platform,
+    ExecutionSettings settings = const ExecutionSettings(),
   })  : _source = source,
+        _settings = settings,
         _analyzer = ScriptsAnalyzer(platform: platform);
 
   ScriptNode _analyze() => _analyzer.analyze(_source.getScripts());
@@ -73,15 +78,14 @@ class ScriptsParser {
   /// Lists all scripts of the scripts source.
   List<ScriptInfo> listCommands() {
     final root = _analyze();
-    return _listCommands(root, Context.root(), const [], const _Scope())
-        .toList();
+    return _listCommands(root, Context.root(), const [], _settings).toList();
   }
 
   Iterable<ScriptInfo> _listCommands(
     ScriptNode node,
     Context context,
     List<String> inheritedErrors,
-    _Scope parentScope,
+    ExecutionSettings parentScope,
   ) sync* {
     final errors = [...inheritedErrors, if (node.error != null) node.error!];
     final scope = parentScope.enter(node);
@@ -117,7 +121,7 @@ class ScriptsParser {
     final root = _analyze();
     var context = Context.root();
     ScriptNode? node = root;
-    var scope = const _Scope();
+    var scope = _settings;
     // If command is not specified, fallback to run
     if (arguments.isEmpty) {
       node = root is ScriptGroup ? root.children['run'] : null;
@@ -134,7 +138,7 @@ class ScriptsParser {
     Context context,
     List<String> arguments,
     List<String> stack,
-    _Scope parentScope,
+    ExecutionSettings parentScope,
   ) sync* {
     if (node == null) {
       throw RpsUsageException(
@@ -249,7 +253,7 @@ class ScriptsParser {
     String? command,
     String key,
     List<String> stack,
-    _Scope scope,
+    ExecutionSettings scope,
   ) sync* {
     if (command == null) return;
     final hookContext = context.next(key);
@@ -367,7 +371,7 @@ class ScriptsParser {
     required Context context,
     required String command,
     required List<String> stack,
-    required _Scope scope,
+    required ExecutionSettings scope,
     List<String>? arguments,
     Map<String, String> named = const {},
     bool isHook = false,
@@ -381,9 +385,7 @@ class ScriptsParser {
         named: named,
         isHook: isHook,
         step: step,
-        workingDirectory: scope.cwd,
-        environment: scope.env,
-        envFiles: scope.envFiles,
+        settings: scope,
       );
       return;
     }
@@ -412,24 +414,7 @@ class ScriptsParser {
       context.reference(),
       step == null ? [...words, ...?arguments] : words,
       stack,
-      const _Scope(),
-    );
-  }
-}
-
-class _Scope {
-  final String? cwd;
-  final Map<String, String> env;
-  final List<String> envFiles;
-
-  const _Scope({this.cwd, this.env = const {}, this.envFiles = const []});
-
-  _Scope enter(ScriptNode? node) {
-    if (node == null) return this;
-    return _Scope(
-      cwd: node.cwd ?? cwd,
-      env: {...env, ...node.env},
-      envFiles: [...envFiles, ...node.envFiles],
+      _settings,
     );
   }
 }

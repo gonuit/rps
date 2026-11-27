@@ -92,14 +92,8 @@ class CommandExecuted extends ExecutionEvent {
   /// Errors encountered while parsing this command.
   final List<String> errors;
 
-  /// Directory the command runs in, relative to the project, if set.
-  final String? workingDirectory;
-
-  /// Environment variables set for the command.
-  final Map<String, String> environment;
-
-  /// Env files loaded for the command, later files win.
-  final List<String> envFiles;
+  /// Where and how the command runs.
+  final ExecutionSettings settings;
 
   /// Returns a combined error message, or null if there are no errors.
   String? get errorMessage => errors.isEmpty ? null : errors.join('\n');
@@ -113,9 +107,7 @@ class CommandExecuted extends ExecutionEvent {
     required this.step,
     required this.named,
     required this.commandArguments,
-    required this.workingDirectory,
-    required this.environment,
-    required this.envFiles,
+    required this.settings,
   });
 
   /// Creates a [CommandExecuted], parsing positional arguments from [command].
@@ -126,9 +118,7 @@ class CommandExecuted extends ExecutionEvent {
     Map<String, String> named = const {},
     bool isHook = false,
     (int, int)? step,
-    String? workingDirectory,
-    Map<String, String> environment = const {},
-    List<String> envFiles = const [],
+    ExecutionSettings settings = const ExecutionSettings(),
   }) {
     final errors = <String>[];
     var commandArguments = const <PositionalArgument>[];
@@ -150,9 +140,7 @@ class CommandExecuted extends ExecutionEvent {
       isHook: isHook,
       step: step,
       named: named,
-      workingDirectory: workingDirectory,
-      environment: environment,
-      envFiles: envFiles,
+      settings: settings,
     );
   }
 

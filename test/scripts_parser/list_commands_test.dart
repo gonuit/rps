@@ -315,7 +315,7 @@ scripts:
       List<String?> directories(List<String> arguments) => parser
           .getCommandsToExecute(arguments)
           .whereType<CommandExecuted>()
-          .map((e) => e.workingDirectory)
+          .map((e) => e.settings.cwd)
           .toList();
 
       expect(directories(['plain']), equals(['root-dir']));
@@ -364,13 +364,13 @@ scripts:
           .toList();
 
       final [build, after] = commands(['app', 'build']);
-      expect(build.environment, {'A': 'root', 'B': 'app', 'C': 'build'});
-      expect(build.envFiles, equals(['.env', '.env.app']));
-      expect(after.environment, {'A': 'root', 'B': 'app', 'C': 'app'});
+      expect(build.settings.env, {'A': 'root', 'B': 'app', 'C': 'build'});
+      expect(build.settings.envFiles, equals(['.env', '.env.app']));
+      expect(after.settings.env, {'A': 'root', 'B': 'app', 'C': 'app'});
 
       final [plain, _] = commands(['app', 'ref']);
-      expect(plain.environment, {'A': 'root', 'B': 'root'});
-      expect(plain.envFiles, equals(['.env']));
+      expect(plain.settings.env, {'A': 'root', 'B': 'root'});
+      expect(plain.settings.envFiles, equals(['.env']));
     });
 
     group(r'$steps', () {

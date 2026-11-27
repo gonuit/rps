@@ -169,10 +169,14 @@ class ScriptRunner {
     );
   }
 
+  String _base(ExecutionSettings settings) =>
+      settings.baseDirectory ?? _fs.currentDirectoryPath;
+
   String? _workingDirectory(CommandExecuted event) {
-    final directory = event.workingDirectory;
-    if (directory == null) return null;
-    final path = p.normalize(p.join(_fs.currentDirectoryPath, directory));
+    final settings = event.settings;
+    final directory = settings.cwd;
+    if (directory == null) return settings.baseDirectory;
+    final path = p.normalize(p.join(_base(settings), directory));
     if (!_fs.directoryExists(path)) {
       throw RpsConfigException(
         'The working directory "$directory" of the script '
@@ -182,9 +186,9 @@ class ScriptRunner {
     return path;
   }
 
-  Map<String, String> _envFile(String file) {
-    return _envFiles.putIfAbsent(file, () {
-      final path = p.normalize(p.join(_fs.currentDirectoryPath, file));
+  Map<String, String> _envFile(String file, ExecutionSettings settings) {
+    final path = p.normalize(p.join(_base(settings), file));
+    return _envFiles.putIfAbsent(path, () {
       if (!_fs.fileExists(path)) {
         throw RpsConfigException('The env file "$file" does not exist.');
       }
@@ -193,13 +197,15 @@ class ScriptRunner {
   }
 
   Map<String, String>? _environment(CommandExecuted event) {
+    final settings = event.settings;
     final environment = <String, String>{};
-    for (final file in event.envFiles) {
-      for (final MapEntry(key: name, :value) in _envFile(file).entries) {
+    for (final file in settings.envFiles) {
+      final values = _envFile(file, settings);
+      for (final MapEntry(key: name, :value) in values.entries) {
         if (!_processEnvironment.containsKey(name)) environment[name] = value;
       }
     }
-    environment.addAll(event.environment);
+    environment.addAll(settings.env);
     return environment.isEmpty ? null : environment;
   }
 
@@ -209,14 +215,16 @@ class ScriptRunner {
       event.context,
       isHook: event.isHook,
       step: event.step,
-      directory: event.workingDirectory,
+      directory: event.settings.cwd,
     );
-    final command = event.compile(shell: executor.shell);
+    final shell = event.settings.shell ?? executor.shell;
+    final command = event.compile(shell: shell);
     _print(branch, '${boldGreen(r'$')} ${bold(command)}\n');
     if (dryRun) return;
 
     final exitCode = await executor.execute(
       command,
+      shell: shell,
       environment: _environment(event),
       workingDirectory: _workingDirectory(event),
       output: branch == null
