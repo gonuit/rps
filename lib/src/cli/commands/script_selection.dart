@@ -2,41 +2,28 @@ import 'dart:async';
 
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
 class ScriptSelectionCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
-  /// The executor used to run shell commands.
-  final Executor executor;
-
-  /// Whether the selected script is printed instead of being run.
-  final bool dryRun;
-
-  /// Whether scripts are confirmed without asking.
-  final bool assumeYes;
+  /// Runs the commands of the selected script.
+  final ScriptRunner runner;
 
   final Platform _platform;
 
-  final FileSystem _fs;
-
   /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
-    required this.executor,
-    this.dryRun = false,
-    this.assumeYes = false,
+    required this.runner,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
-    FileSystem fs = const SystemFileSystem(),
   })  : _getScriptsSource = getScriptsSource,
-        _platform = platform,
-        _fs = fs;
+        _platform = platform;
 
   /// Asks for a script and its arguments, then runs it.
-  Future<void> run(Console console, {Console? errors}) async {
+  Future<void> run() async {
+    final console = runner.console;
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands();
@@ -88,14 +75,10 @@ class ScriptSelectionCommand {
     ];
 
     await RunCommand(
-      executor: executor,
-      dryRun: dryRun,
-      assumeYes: assumeYes,
-      interactive: true,
+      runner: runner,
       getScriptsSource: () => source,
       platform: _platform,
-      fs: _fs,
-    ).run(console, runCommandArguments, errors: errors);
+    ).run(runCommandArguments);
   }
 }
 

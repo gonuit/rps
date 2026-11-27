@@ -1,6 +1,5 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/cli/script_runner.dart';
 import 'package:test/test.dart';
 
 import '../mocks/fake_executor.dart';

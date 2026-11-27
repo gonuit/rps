@@ -3,6 +3,7 @@ library;
 
 export 'src/cli/commands/run_command.dart';
 export 'src/cli/console.dart';
+export 'src/cli/script_runner.dart';
 export 'src/exceptions/rps_exception.dart';
 export 'src/sources/pubspec.dart';
 export 'src/scripts_parser/export.dart';

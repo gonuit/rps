@@ -20,10 +20,13 @@ scripts:
       final executions = <String>[];
       final run = RunCommand(
         getScriptsSource: () => MockedScriptSource(scripts),
-        executor: FakeExecutor(exitCode: 0, executions: executions),
+        runner: ScriptRunner(
+          executor: FakeExecutor(executions: executions),
+          console: Console(sink: StringBuffer()),
+        ),
         platform: const FakePlatform(),
       );
-      await run.run(Console(sink: StringBuffer()), arguments);
+      await run.run(arguments);
       return executions;
     }
 
@@ -70,10 +73,13 @@ scripts:
       sink = StreamSinkController();
       return RunCommand(
         getScriptsSource: () => MockedScriptSource(scripts),
-        executor: FakeExecutor(exitCode: 1, executions: executions),
+        runner: ScriptRunner(
+          executor: FakeExecutor(exitCode: 1, executions: executions),
+          console: Console(sink: sink, ansi: false),
+          dryRun: true,
+        ),
         platform: const FakePlatform(),
-        dryRun: true,
-      ).run(Console(sink: sink, ansi: false), arguments);
+      ).run(arguments);
     }
 
     test('prints hooks and references in order and runs nothing', () async {

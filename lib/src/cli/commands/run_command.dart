@@ -2,43 +2,24 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/cli/script_runner.dart';
-import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
 class RunCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
-  /// The executor used to run shell commands.
-  final Executor executor;
-
-  /// Whether commands are printed instead of being run.
-  final bool dryRun;
-
-  /// Whether scripts are confirmed without asking.
-  final bool assumeYes;
-
-  /// Whether the user can be asked questions.
-  final bool interactive;
+  /// Runs the commands of the script.
+  final ScriptRunner runner;
 
   final Platform _platform;
 
-  final FileSystem _fs;
-
   /// Creates a [RunCommand].
   RunCommand({
-    required this.executor,
-    this.dryRun = false,
-    this.assumeYes = false,
-    this.interactive = false,
+    required this.runner,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
-    FileSystem fs = const SystemFileSystem(),
   })  : _getScriptsSource = getScriptsSource,
-        _platform = platform,
-        _fs = fs;
+        _platform = platform;
 
   List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
     if (arguments.firstOrNull != 'run') {
@@ -56,13 +37,7 @@ class RunCommand {
   }
 
   /// Runs the script that [arguments] point to, with its hooks.
-  ///
-  /// The error output of commands run at the same time goes to [errors].
-  Future<void> run(
-    Console console,
-    List<String> arguments, {
-    Console? errors,
-  }) async {
+  Future<void> run(List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
 
@@ -74,14 +49,6 @@ class RunCommand {
       );
     }
 
-    await ScriptRunner(
-      executor: executor,
-      console: console,
-      errors: errors,
-      dryRun: dryRun,
-      assumeYes: assumeYes,
-      interactive: interactive,
-      fs: _fs,
-    ).run(events);
+    await runner.run(events);
   }
 }

@@ -57,9 +57,15 @@ Future<int> runCli(
     }
 
     final shell = Shell.of(config.getInterpreter(platform), platform);
-    final runExecutor = executor ?? Executor(shell: shell);
-
-    final assumeYes = arguments.yes || environment.assumeYes;
+    final runner = ScriptRunner(
+      executor: executor ?? Executor(shell: shell),
+      console: out,
+      errors: errors,
+      dryRun: arguments.dryRun,
+      assumeYes: arguments.yes || environment.assumeYes,
+      interactive: !environment.isCI && environment.hasTerminal,
+      fs: fs,
+    );
 
     switch (arguments.action) {
       case RpsAction.help:
@@ -75,26 +81,19 @@ Future<int> runCli(
         ).run(out, json: arguments.json);
       case RpsAction.run:
         await RunCommand(
+          runner: runner,
           getScriptsSource: getScriptSource,
-          executor: runExecutor,
-          dryRun: arguments.dryRun,
-          assumeYes: assumeYes,
-          interactive: !environment.isCI && environment.hasTerminal,
           platform: platform,
-          fs: fs,
-        ).run(out, arguments.script, errors: errors);
+        ).run(arguments.script);
       case RpsAction.select:
         if (environment.isCI) {
           throw RpsUsageException('No command has been matched.');
-        } else if (environment.hasTerminal) {
+        } else if (runner.interactive) {
           await ScriptSelectionCommand(
+            runner: runner,
             getScriptsSource: getScriptSource,
-            executor: runExecutor,
-            dryRun: arguments.dryRun,
-            assumeYes: assumeYes,
             platform: platform,
-            fs: fs,
-          ).run(out, errors: errors);
+          ).run();
         } else {
           printHelp(out, package);
         }
