@@ -20,7 +20,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
     ```bash
     dart pub global activate rps
     ```
-2. Define scripts inside the `pubspec.yaml` or create an [`rps.yaml` file]((#-external-scripts-file)).
+2. Define scripts inside the `pubspec.yaml` or create an [`rps.yaml` file](#-external-scripts-file).
       ```yaml
       scripts:
         gen: flutter pub run build_runner build --delete-conflicting-outputs
@@ -179,7 +179,7 @@ This can be useful for commands like `rm -rf`, which in Windows.... `rd /s /q`, 
 
 Arguments can be passed by adding them to the end of the command － simple, but sometimes it is useful to give them in a specific place, here positional arguments come to the rescue.
 
-Positional arguments are defined as numbers in parentheses: `${0}`, `${1}`, `${3}` and so on....
+Positional arguments are defined as numbers in parentheses: `${0}`, `${1}`, `${2}` and so on....
 
 For example, you can use the following command to specify the target to be built.
 
@@ -196,6 +196,7 @@ A few rules to keep in mind:
 - Indices must be contiguous starting from `${0}` — using `${0}` and `${2}` without `${1}` will error.
 - The same index can be reused in one command (e.g. `echo ${0} ${0}`).
 - Hooks (`$before` / `$after`) **do not** support positional arguments.
+- Trailing arguments are passed to the script literally, so characters such as spaces, quotes, `&` or `$` are not interpreted by the shell.
 
 ## 📝 External scripts file
 
