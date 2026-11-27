@@ -1,3 +1,20 @@
+## 0.12.0
+- Colors are used only when the output is a terminal. They are also disabled by the `NO_COLOR` environment variable, `TERM=dumb` and the new `--no-color` flag.
+  - Output piped to a file or another program no longer contains color codes.
+- The update notice and its one second pause appear only when the output is a terminal. Set `RPS_NO_UPDATE_CHECK=1` to turn the update check off.
+- Added `rps ls --json`, which lists scripts with their path, command, description, positional arguments and errors.
+- Added `--dry-run` (`-n`), which prints the commands of a script with its hooks without running them.
+- Exit codes are now documented and stable: `64` for a missing script or a missing positional argument, `78` for a configuration error. The exit code of a failed script is passed through as before.
+  - These errors previously ended with exit code `1`.
+- Errors about a missing script suggest running `rps ls`.
+- Added the "Using rps with AI agents" section to the README.
+- Scripts are now run without a native library, so rps works on every desktop platform supported by the Dart SDK, including Windows on Arm64.
+- Pressing Ctrl-C lets the running script handle the interruption and clean up. Previously the script was killed immediately.
+  - rps now exits with the exit code of the interrupted script, usually `130`, instead of `137`.
+- A termination signal sent to rps is passed on to the running script.
+- A missing interpreter is reported with a clear error.
+- **Breaking** for users of the Dart API: removed the `ExecuteNative` and `Execute` types and the `fs` parameter of `execute`.
+
 ## 0.11.0
 - Skip update check and interactive selection in CI environments.
   - `CI=false` and `CI=0` are not treated as a CI environment.
