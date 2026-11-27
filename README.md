@@ -374,11 +374,7 @@ ___
 
 ## Supported platforms
 
-| Platform |  x64  | Arm64 |
-| :------- | :---: | :---: |
-| Linux    |   ✅   |   ✅   |
-| Windows  |   ✅   |   ❌   |
-| MacOs    |   ✅   |   ✅   |
+rps is written in pure Dart and runs on every desktop platform the Dart SDK supports: Linux, macOS and Windows.
 
 
 ---
