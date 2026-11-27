@@ -1,7 +1,6 @@
 import 'package:pub_semver/pub_semver.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/config/rps_config.dart';
-import 'package:rps/src/utils/file_system.dart';
 
 /// Provides metadata about the rps package itself.
 class RpsPackage {

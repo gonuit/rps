@@ -129,8 +129,17 @@ enum Alignment {
 class Console implements StringSink {
   final StringSink _sink;
 
+  /// Whether ANSI escape sequences are written to the sink.
+  final bool ansi;
+
   /// Creates a [Console] backed by the given [sink].
-  Console({required StringSink sink}) : _sink = sink;
+  Console({required StringSink sink, this.ansi = true}) : _sink = sink;
+
+  /// Returns a console for the same sink with the given [ansi] setting.
+  Console withAnsi(bool ansi) => Console(sink: _sink, ansi: ansi);
+
+  Object? _styled(Object? object) =>
+      ansi ? object : removeAnsiEscapeSequences('$object');
 
   /// Returns the visible length of [input] (excluding ANSI escape sequences).
   int visibleLength(String input) {
@@ -206,12 +215,12 @@ class Console implements StringSink {
 
   @override
   void write(Object? object) {
-    _sink.write(object);
+    _sink.write(_styled(object));
   }
 
   @override
   void writeAll(Iterable objects, [String separator = '']) {
-    _sink.writeAll(objects, separator);
+    _sink.writeAll(objects.map(_styled), '${_styled(separator)}');
   }
 
   @override
@@ -221,7 +230,7 @@ class Console implements StringSink {
 
   @override
   void writeln([Object? object = '']) {
-    _sink.writeln(object);
+    _sink.writeln(_styled(object));
   }
 
   /// Flushes the underlying sink if it is an [IOSink].

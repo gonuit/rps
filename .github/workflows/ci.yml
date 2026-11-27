@@ -19,10 +19,26 @@ jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
       - run: dart pub get
       - run: dart test
+
+  minimum-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.3.0
+      - name: Install without dev dependencies, as users do
+        run: |
+          sed -i '/^dev_dependencies:/,$d' pubspec.yaml
+          rm pubspec.lock
+          dart pub global activate --source path .
+      - run: dart pub global run rps ls --json
+      - run: dart pub global run rps --dry-run build android apk

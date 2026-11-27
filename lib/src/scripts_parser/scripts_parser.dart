@@ -1,9 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Parses and resolves scripts from a [ScriptsSource].
-abstract class ScriptsParser {
+class ScriptsParser {
   /// Key for the before-hook entry.
   static const beforeKey = r'$before';
 
@@ -19,297 +18,418 @@ abstract class ScriptsParser {
   /// Key for the default platform script entry.
   static const defaultScriptKey = r'$default';
 
+  /// Key for the entry with commands run one after another.
+  static const stepsKey = r'$steps';
+
+  /// Key for the entry with commands run at the same time.
+  static const parallelKey = r'$parallel';
+
+  /// Key for the named arguments entry.
+  static const argsKey = r'$args';
+
+  /// Key for the confirmation entry.
+  static const confirmKey = r'$confirm';
+
+  /// Key for the working directory entry.
+  static const cwdKey = r'$cwd';
+
+  /// Key for the environment variables entry.
+  static const envKey = r'$env';
+
+  /// Key for the env files entry.
+  static const envFileKey = r'$envFile';
+
+  /// Keys with a special meaning in a script or a group.
+  static const specialKeys = {
+    beforeKey,
+    afterKey,
+    scriptKey,
+    descriptionKey,
+    defaultScriptKey,
+    stepsKey,
+    parallelKey,
+    argsKey,
+    confirmKey,
+    cwdKey,
+    envKey,
+    envFileKey,
+  };
+
   /// Returns `true` if [key] is a reserved special key.
-  static bool isSpecialKey(String key) => switch (key) {
-        scriptKey ||
-        beforeKey ||
-        afterKey ||
-        descriptionKey ||
-        defaultScriptKey =>
-          true,
-        _ => false,
-      };
+  static bool isSpecialKey(String key) => specialKeys.contains(key);
 
-  /// Lists all available commands from the scripts source.
-  List<CommandExecuted> listCommands();
-
-  /// Resolves [arguments] into an ordered list of execution events.
-  List<ExecutionEvent> getCommandsToExecute(List<String> arguments);
+  final ScriptsSource _source;
+  final ScriptsAnalyzer _analyzer;
+  final ExecutionSettings _settings;
 
   /// Creates a [ScriptsParser] for the given [source].
-  factory ScriptsParser({
+  ///
+  /// Every script starts from [settings].
+  ScriptsParser({
     required ScriptsSource source,
     required Platform platform,
-  }) = _ScriptParser;
-}
-
-class _ScriptParser implements ScriptsParser {
-  final ScriptsSource _source;
-  final Platform _platform;
-
-  _ScriptParser({
-    required ScriptsSource source,
-    required Platform platform,
+    ExecutionSettings settings = const ExecutionSettings(),
   })  : _source = source,
-        _platform = platform;
+        _settings = settings,
+        _analyzer = ScriptsAnalyzer(platform: platform);
 
-  @override
-  List<CommandExecuted> listCommands() {
-    var scripts = _source.getScripts();
-    final context = Context.root(scripts);
-    return _listCommands(context: context).toList();
+  ScriptNode _analyze() => _analyzer.analyze(_source.getScripts());
+
+  /// Lists all scripts of the scripts source.
+  List<ScriptInfo> listCommands() {
+    final root = _analyze();
+    return _listCommands(root, Context.root(), const [], _settings).toList();
   }
 
-  Iterable<CommandExecuted> _listCommands({
-    required Context context,
-  }) sync* {
-    final current = context.current;
-
-    if (current is String) {
-      if (context.isRoot) {
-        // Root-level string values aren't commands; skip.
-      } else if (context.key == ScriptsParser.scriptKey ||
-          (context.key != null && !ScriptsParser.isSpecialKey(context.key!))) {
-        yield CommandExecuted(
-          command: current,
-          context: context,
+  Iterable<ScriptInfo> _listCommands(
+    ScriptNode node,
+    Context context,
+    List<String> inheritedErrors,
+    ExecutionSettings parentScope,
+  ) sync* {
+    final errors = [...inheritedErrors, if (node.error != null) node.error!];
+    final scope = parentScope.enter(node);
+    switch (node) {
+      case Script():
+        yield ScriptInfo(
+          keys: context.path,
+          script: node,
+          errors: errors,
+          confirmation: _confirmation(node, context),
+          workingDirectory: scope.cwd,
+          environment: scope.env,
+          envFiles: scope.envFiles,
         );
-      }
-    } else if (current is Map) {
-      if (_hasScriptKey(current)) {
-        final script = current[ScriptsParser.scriptKey];
-        final description = current[ScriptsParser.descriptionKey];
-        if (script is String) {
-          yield CommandExecuted(
-            command: script,
-            context: context,
-            description: description,
-          );
-        } else if (script is Map) {
-          final platformKey = '\$${_platform.operatingSystem}';
-          final command =
-              script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
-          if (command is! String) {
-            yield CommandExecuted(
-              command: '-',
-              context: context,
-              description: description,
-              errors: [
-                'No platform script key for the command: "${context.path.join(' ')}". '
-                    'Consider adding the key for the current '
-                    'platform: "$platformKey" or the default script '
-                    'key: "${ScriptsParser.defaultScriptKey}".',
-              ],
-            );
-          } else {
-            yield CommandExecuted(
-              command: command,
-              context: context,
-              description: description,
-            );
-          }
+      case ScriptGroup():
+        for (final MapEntry(:key, :value) in node.children.entries) {
+          yield* _listCommands(value, context.next(key), errors, scope);
         }
-      } else {
-        for (final key in current.keys) {
-          yield* _listCommands(context: context.next(key));
-        }
-      }
-    } else {
-      yield CommandExecuted(
-        command: current.toString(),
-        context: context,
-        errors: [
-          'Invalid command. Cannot use type '
-              '${current.runtimeType} ($current) as a command.',
-        ],
-      );
     }
   }
 
-  @override
+  /// Whether a script or a group exists under the given [keys].
+  bool contains(List<String> keys) {
+    ScriptNode? node = _analyze();
+    for (final key in keys) {
+      node = node is ScriptGroup ? node.children[key] : null;
+    }
+    return node != null;
+  }
+
+  /// Whether [arguments] start with the path of a script or a group.
+  bool defines(List<String> arguments) {
+    ScriptNode? node = _analyze();
+    for (final key in arguments) {
+      if (node is! ScriptGroup) break;
+      node = node.children[key];
+    }
+    return node != null;
+  }
+
+  /// Resolves [arguments] into an ordered list of execution events.
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments) {
-    var scripts = _source.getScripts();
-    var context = Context.root(scripts);
+    final root = _analyze();
+    var context = Context.root();
+    ScriptNode? node = root;
+    var scope = _settings;
     // If command is not specified, fallback to run
     if (arguments.isEmpty) {
+      node = root is ScriptGroup ? root.children['run'] : null;
       context = context.next('run');
+      scope = scope.enter(root);
     }
 
-    final events = <ExecutionEvent>{};
-    for (final event
-        in _getCommandsToExecute(context: context, arguments: arguments)) {
-      final added = events.add(event);
-      if (!added) {
-        throw ScriptParserException(
-          'Script cycle detected: ${[
-            ...events.map((e) => e.path),
-            event.path
-          ].join(' → ')}',
-        );
-      }
-    }
-
-    return events.toList();
+    return _resolve(root, node, context, arguments, const [], scope).toList();
   }
 
-  Iterable<ExecutionEvent> _getCommandsToExecute({
-    required Context context,
-    required List<String> arguments,
-  }) sync* {
-    final current = context.current;
-
-    if (current == null) {
-      throw RpsException(
+  Iterable<ExecutionEvent> _resolve(
+    ScriptNode root,
+    ScriptNode? node,
+    Context context,
+    List<String> arguments,
+    List<String> stack,
+    ExecutionSettings parentScope,
+  ) sync* {
+    if (node == null) {
+      throw RpsUsageException(
         'Missing script. Command: "${context.basePath.join(' ')}" not found.',
       );
-    } else if (current is String) {
-      if (context.isRoot) {
-        throw RpsException(
-          'The root key "scripts" cannot contain commands.',
-        );
-      } else {
-        yield* _handleCommand(
-          command: current,
-          context: context,
-          arguments: arguments,
-        );
-      }
-    } else if (current is Map) {
-      // if it is a Map, it may contain hooks.
-      yield* _handleHooks(context, () sync* {
-        if (_hasScriptKey(current)) {
-          final script = current[ScriptsParser.scriptKey];
-          if (script is String) {
-            yield* _handleCommand(
-              command: script,
-              context: context,
-              arguments: arguments,
-            );
-          } else if (script is Map) {
-            final platformKey = '\$${_platform.operatingSystem}';
-            final command =
-                script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
-            if (command is! String) {
-              throw RpsException(
-                'No platform script key for the command: "${context.path.join(' ')}". '
-                'Consider adding the key for the current '
-                'platform: "$platformKey" or the default script '
-                'key: "${ScriptsParser.defaultScriptKey}".',
-              );
-            } else {
-              yield* _handleCommand(
-                command: command,
-                context: context,
-                arguments: arguments,
-              );
-            }
-          }
+    }
+    final error = node.error;
+    if (error != null) throw RpsConfigException(error);
+    final scope = parentScope.enter(node);
+    if (node is Script && node.confirm) {
+      yield ConfirmationRequired(
+        context: context,
+        message: _confirmation(node, context)!,
+      );
+    }
+
+    yield* _hook(
+      root,
+      context,
+      node.before,
+      ScriptsParser.beforeKey,
+      stack,
+      scope,
+    );
+
+    switch (node) {
+      case Script():
+        final entered = _enter(stack, context.basePath.join(' '));
+        final (named, positional) = _named(node, context, arguments);
+        final steps = node.steps;
+        final parallel = node.parallel;
+        if (parallel != null) {
+          _checkArguments(node, context, positional);
+          yield ParallelExecuted(
+            context: context,
+            branches: [
+              for (final (index, command) in parallel.indexed)
+                ParallelBranch(
+                  label: _isReference(command)
+                      ? command.substring(4).trim()
+                      : '${index + 1}',
+                  events: _command(
+                    root,
+                    context: context,
+                    command: command,
+                    arguments: positional,
+                    named: named,
+                    stack: entered,
+                    scope: scope,
+                    step: (index + 1, parallel.length),
+                  ).toList(),
+                ),
+            ],
+          );
+        } else if (steps == null) {
+          yield* _command(
+            root,
+            context: context,
+            command: node.command,
+            arguments: positional,
+            named: named,
+            stack: entered,
+            scope: scope,
+          );
         } else {
-          final nextKey = arguments.firstOrNull;
-          if (nextKey == null) {
-            throw RpsException(
-              'Missing script. Command: "${context.path}" '
-              'is not a full path.',
-            );
-          } else {
-            final remainingArguments = arguments.skip(1).toList();
-            yield* _getCommandsToExecute(
-              context: context.next(nextKey),
-              arguments: remainingArguments,
+          _checkArguments(node, context, positional);
+          for (final (index, step) in steps.indexed) {
+            yield* _command(
+              root,
+              context: context,
+              command: step,
+              arguments: positional,
+              named: named,
+              stack: entered,
+              scope: scope,
+              step: (index + 1, steps.length),
             );
           }
         }
-      });
-    } else {
-      throw RpsException(
-        'Invalid command. Cannot use type '
-        '${current.runtimeType} ($current) as a command.',
-      );
+      case ScriptGroup():
+        final nextKey = arguments.firstOrNull;
+        if (nextKey == null) {
+          throw RpsUsageException(
+            'Missing script. Command: "${context.path}" '
+            'is not a full path.',
+          );
+        }
+        final child = node.children[nextKey];
+        yield* _resolve(
+          root,
+          child,
+          context.next(nextKey),
+          arguments.skip(1).toList(),
+          stack,
+          scope,
+        );
     }
+
+    yield* _hook(
+      root,
+      context,
+      node.after,
+      ScriptsParser.afterKey,
+      stack,
+      scope,
+    );
   }
 
-  Iterable<ExecutionEvent> _handleHooks(
+  Iterable<ExecutionEvent> _hook(
+    ScriptNode root,
     Context context,
-    Iterable<ExecutionEvent> Function() handler,
+    String? command,
+    String key,
+    List<String> stack,
+    ExecutionSettings scope,
   ) sync* {
-    final current = context.current;
-    final beforeHook = current[ScriptsParser.beforeKey];
-    if (beforeHook is String) {
-      final hookContext = context.next(ScriptsParser.beforeKey);
-      yield HookExecuted(
-        command: beforeHook,
-        context: hookContext,
-        name: 'before',
-      );
-      yield* _handleCommand(
-        isHook: true,
-        command: beforeHook,
-        context: hookContext,
-        // arguments are not passed to the hooks
-        arguments: null,
-      );
-    }
-
-    yield* handler();
-
-    final afterHook = current[ScriptsParser.afterKey];
-    if (afterHook is String) {
-      final hookContext = context.next(ScriptsParser.afterKey);
-      yield HookExecuted(
-        command: afterHook,
-        context: hookContext,
-        name: 'after',
-      );
-      yield* _handleCommand(
-        command: afterHook,
-        context: hookContext,
-        // arguments are not passed to the hooks
-        arguments: null,
-        isHook: true,
-      );
-    }
+    if (command == null) return;
+    final hookContext = context.next(key);
+    // arguments are not passed to the hooks
+    yield* _command(
+      root,
+      context: hookContext,
+      command: command,
+      isHook: true,
+      stack: _enter(stack, hookContext.basePath.join(' ')),
+      scope: scope,
+    );
   }
 
-  Iterable<ExecutionEvent> _handleCommand({
+  String? _confirmation(Script script, Context context) {
+    if (!script.confirm) return null;
+    return script.confirmMessage ??
+        'Run the script "${context.basePath.join(' ')}"?';
+  }
+
+  void _checkArguments(Script script, Context context, List<String> arguments) {
+    final expected = PositionalArgument.parse(script.command).length;
+    if (arguments.length <= expected) return;
+    throw RpsUsageException(
+      'The script "${context.basePath.join(' ')}" runs several commands, '
+      'so it does not accept additional arguments: '
+      '${arguments.skip(expected).join(' ')}',
+    );
+  }
+
+  (Map<String, String>, List<String>) _named(
+    Script script,
+    Context context,
+    List<String> arguments,
+  ) {
+    if (script.args.isEmpty) return (const {}, arguments);
+
+    final path = context.basePath.join(' ');
+    final values = {
+      for (final argument in script.args)
+        if (argument.defaultValue != null)
+          argument.name: argument.defaultValue!,
+    };
+    final names = script.args.map((argument) => argument.name).toSet();
+    final rest = <String>[];
+    for (var i = 0; i < arguments.length; i++) {
+      final argument = arguments[i];
+      if (argument == '--') {
+        rest.addAll(arguments.skip(i + 1));
+        break;
+      }
+      final separator = argument.indexOf('=');
+      final name = !argument.startsWith('--')
+          ? null
+          : argument.substring(2, separator < 0 ? null : separator);
+      if (!names.contains(name)) {
+        rest.add(argument);
+      } else if (separator >= 0) {
+        values[name!] = argument.substring(separator + 1);
+      } else if (i + 1 < arguments.length) {
+        values[name!] = arguments[++i];
+      } else {
+        throw RpsUsageException(
+          'The argument "--$name" of the script "$path" needs a value.',
+        );
+      }
+    }
+
+    final missing = names.where((name) => !values.containsKey(name));
+    if (missing.isNotEmpty) {
+      throw RpsUsageException(
+        'The script "$path" requires the argument(s): '
+        '${missing.map((name) => '--$name').join(', ')}.',
+      );
+    }
+    return (values, rest);
+  }
+
+  static final _placeholder =
+      RegExp(r'\$\{\s*([0-9]+|[A-Za-z_][A-Za-z0-9_-]*)\s*\}');
+
+  String _fill(
+    String word,
+    Context context,
+    List<String> arguments,
+    Map<String, String> named, {
+    required bool positional,
+  }) {
+    return word.replaceAllMapped(_placeholder, (match) {
+      final index = int.tryParse(match[1]!);
+      if (index == null) return named[match[1]!] ?? match[0]!;
+      if (!positional) return match[0]!;
+      if (index >= arguments.length) {
+        throw RpsUsageException(
+          'The script "${context.basePath.join(' ')}" defines a positional '
+          'argument ${match[0]}, but ${arguments.length} positional '
+          'argument(s) are given.',
+        );
+      }
+      return arguments[index];
+    });
+  }
+
+  // "rps" followed by an option is a call of rps itself, not a reference.
+  static bool _isReference(String command) =>
+      command.startsWith('rps ') &&
+      !command.substring(4).trimLeft().startsWith('-');
+
+  List<String> _enter(List<String> stack, String path) {
+    if (stack.contains(path)) {
+      throw RpsConfigException(
+        'Script cycle detected: ${[...stack, path].join(' → ')}',
+      );
+    }
+    return [...stack, path];
+  }
+
+  Iterable<ExecutionEvent> _command(
+    ScriptNode root, {
     required Context context,
     required String command,
+    required List<String> stack,
+    required ExecutionSettings scope,
     List<String>? arguments,
+    Map<String, String> named = const {},
     bool isHook = false,
+    (int, int)? step,
   }) sync* {
-    if (command.startsWith(r'rps ')) {
-      final referencedCommand = command.substring(4).trim();
-
-      yield CommandReferenced(
-        command: referencedCommand,
-        context: context,
-        label: context.key!,
-        isHook: isHook,
-      );
-
-      // Ref should start from root.
-      yield* _getCommandsToExecute(
-        context: Context(
-          key: null,
-          parent: context,
-          isBase: true,
-          current: context.root.current,
-        ),
-        arguments: [
-          ...referencedCommand.split(RegExp(r'\s+')),
-          ...?arguments,
-        ],
-      );
-    } else {
+    if (!_isReference(command)) {
       yield CommandExecuted(
         command: command,
         context: context,
         arguments: arguments,
+        named: named,
         isHook: isHook,
+        step: step,
+        settings: scope,
       );
+      return;
     }
-  }
 
-  bool _hasScriptKey(Map scripts) {
-    return scripts.containsKey(ScriptsParser.scriptKey);
+    final words = [
+      for (final word in command.substring(4).trim().split(RegExp(r'\s+')))
+        _fill(
+          word,
+          context,
+          arguments ?? const [],
+          named,
+          positional: step != null,
+        ),
+    ];
+    yield CommandReferenced(
+      command: words.join(' '),
+      context: context,
+      isHook: isHook,
+      step: step,
+    );
+
+    // Ref should start from root.
+    yield* _resolve(
+      root,
+      root,
+      context.reference(),
+      step == null ? [...words, ...?arguments] : words,
+      stack,
+      _settings,
+    );
   }
 }

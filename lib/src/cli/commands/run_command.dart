@@ -2,112 +2,53 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
-import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
-class RunCommand implements Command {
+class RunCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
-  /// The executor used to run shell commands.
-  final Executor executor;
+  /// Runs the commands of the script.
+  final ScriptRunner runner;
 
   final Platform _platform;
 
   /// Creates a [RunCommand].
   RunCommand({
-    required this.executor,
+    required this.runner,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  ShellSyntax get _shellSyntax {
-    if (executor.interpreter == WindowsInterpreter.cmd) return ShellSyntax.cmd;
-    if (_platform.isWindows) return ShellSyntax.powershell;
-    return ShellSyntax.posix;
+  /// Returns [arguments] without the name of the `run` command, unless it
+  /// is the first key of a script.
+  static List<String> scriptPath(
+    ScriptsParser parser,
+    List<String> arguments,
+  ) {
+    if (arguments.firstOrNull != 'run') return arguments;
+    final rest = arguments.skip(1).toList();
+    final isNestedUnderRun = rest.isNotEmpty &&
+        !parser.contains([rest.first]) &&
+        parser.contains(['run', rest.first]);
+    return isNestedUnderRun ? arguments : rest;
   }
 
-  @override
-  String get description =>
-      'This runs an arbitrary command from a pubspec\'s "scripts" object. '
-      'If no "command" is provided, it will list the available scripts.';
-
-  @override
-  String get name => 'run';
-
-  @override
-  String get tooltip => 'run <pubspec script> [arguments]';
-
-  @override
-  bool match(List<String> arguments) {
-    return arguments.isNotEmpty;
-  }
-
-  List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
-    if (arguments.firstOrNull != name) {
-      return parser.getCommandsToExecute(arguments);
-    }
-    try {
-      // Remove command name (run) from arguments list
-      return parser.getCommandsToExecute(arguments.skip(1).toList());
-    } on RpsException {
-      try {
-        return parser.getCommandsToExecute(arguments);
-      } on RpsException catch (_) {}
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> run(Console console, List<String> arguments) async {
+  /// Runs the script that [arguments] point to, with its hooks.
+  Future<void> run(List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
 
-    final List<ExecutionEvent> events;
-    try {
-      events = _resolve(parser, arguments);
-    } on ScriptParserException catch (err) {
-      throw RpsException(err.message, err);
-    }
+    final events = parser.getCommandsToExecute(
+      scriptPath(parser, arguments),
+    );
 
     if (events.isEmpty) {
-      throw RpsException(
+      throw RpsUsageException(
         'Missing script. Command: "${arguments.join(' ')}".',
       );
     }
 
-    for (final event in events) {
-      if (event is CommandExecuted) {
-        final basePath = event.context.basePath;
-        if (event.isHook) {
-          basePath.last = blue(basePath.last.substring(1));
-        }
-        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
-        final command = event.compile(syntax: _shellSyntax);
-        console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
-        final exitCode = await executor.execute(command);
-
-        if (exitCode != 0) {
-          throw CliException(
-            'Command ended with a non zero exit code ($exitCode).',
-            exitCode: exitCode,
-          );
-        }
-        console.writeln();
-      } else if (event is CommandReferenced) {
-        final basePath = event.context.basePath;
-        if (event.isHook) {
-          basePath.last = blue(basePath.last.substring(1));
-        }
-        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
-        console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
-      } else if (event is HookExecuted) {
-        // No output for hook events.
-      }
-    }
+    await runner.run(events);
   }
 }

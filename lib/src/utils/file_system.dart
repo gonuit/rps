@@ -9,6 +9,9 @@ abstract interface class FileSystem {
   /// Returns `true` if a file exists at [path].
   bool fileExists(String path);
 
+  /// Returns `true` if a directory exists at [path].
+  bool directoryExists(String path);
+
   /// Reads the entire file at [path] as a string.
   String readFile(String path);
 
@@ -17,6 +20,9 @@ abstract interface class FileSystem {
 
   /// Returns the paths of all files directly inside the directory at [path].
   List<String> listFilePaths(String path);
+
+  /// Returns the paths of all directories directly inside the one at [path].
+  List<String> listDirectoryPaths(String path);
 
   /// Resolves a `package:` URI to a directory path, or `null` if unresolvable.
   Future<String?> resolvePackagePath(String packageUri);
@@ -34,6 +40,9 @@ class SystemFileSystem implements FileSystem {
   bool fileExists(String path) => io.File(path).existsSync();
 
   @override
+  bool directoryExists(String path) => io.Directory(path).existsSync();
+
+  @override
   String readFile(String path) => io.File(path).readAsStringSync();
 
   @override
@@ -47,6 +56,15 @@ class SystemFileSystem implements FileSystem {
         .listSync()
         .whereType<io.File>()
         .map((f) => f.path)
+        .toList();
+  }
+
+  @override
+  List<String> listDirectoryPaths(String path) {
+    return io.Directory(path)
+        .listSync()
+        .whereType<io.Directory>()
+        .map((directory) => directory.path)
         .toList();
   }
 

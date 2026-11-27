@@ -11,6 +11,7 @@ import 'package:rps/src/update_check/update_checker.dart';
 import 'package:rps/src/update_check/update_notifier.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_environment.dart';
 import '../mocks/fake_file_system.dart';
 import '../mocks/stream_sink_controller.dart';
 
@@ -45,6 +46,30 @@ UpdateNotifier _notifier(
 }
 
 void main() {
+  group('shouldCheckForUpdates', () {
+    test('is true on a terminal outside CI', () {
+      expect(shouldCheckForUpdates(const FakeEnvironment()), isTrue);
+    });
+
+    test('is false in CI', () {
+      expect(shouldCheckForUpdates(const FakeEnvironment(isCI: true)), isFalse);
+    });
+
+    test('is false when stdout is not a terminal', () {
+      expect(
+        shouldCheckForUpdates(const FakeEnvironment(stdoutHasTerminal: false)),
+        isFalse,
+      );
+    });
+
+    test('is false when disabled with the variable', () {
+      expect(
+        shouldCheckForUpdates(const FakeEnvironment(updateCheckDisabled: true)),
+        isFalse,
+      );
+    });
+  });
+
   group('UpdateNotifier', () {
     test('shows a banner when a newer version is available', () async {
       final sink = StreamSinkController();

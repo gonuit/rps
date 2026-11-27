@@ -1,6 +1,5 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/utils/platform.dart';
 import 'package:yaml/yaml.dart';
 
 /// Parsed data from the rps.yaml configuration file.
@@ -53,19 +52,28 @@ class WindowsConfig {
   });
 
   /// Parses a [WindowsConfig] from a YAML map.
-  factory WindowsConfig.fromYaml(YamlMap json) => WindowsConfig(
-        interpreter: json['interpreter'] == null
-            ? WindowsInterpreter.powershell
-            : WindowsInterpreter.values.firstWhere(
-                (i) => i.value == json['interpreter'],
-                orElse: () => throw RpsException(
-                  'Provided Windows interpreter (${json['interpreter']}) '
-                  'is not supported. '
-                  'Supported values are: '
-                  '${WindowsInterpreter.values.map((i) => '"${i.name}"').join(', ')}.',
-                ),
-              ),
+  factory WindowsConfig.fromYaml(YamlMap json) {
+    if (json['interpreter'] == 'cmd') {
+      throw RpsConfigException(
+        'The "cmd" interpreter is no longer supported. '
+        'Remove the "interpreter" key from the "windows" section '
+        'to run scripts with PowerShell.',
       );
+    }
+    return WindowsConfig(
+      interpreter: json['interpreter'] == null
+          ? WindowsInterpreter.powershell
+          : WindowsInterpreter.values.firstWhere(
+              (i) => i.value == json['interpreter'],
+              orElse: () => throw RpsConfigException(
+                'Provided Windows interpreter (${json['interpreter']}) '
+                'is not supported. '
+                'Supported values are: '
+                '${WindowsInterpreter.values.map((i) => '"${i.name}"').join(', ')}.',
+              ),
+            ),
+    );
+  }
 }
 
 /// Unix interpreter configuration.
@@ -84,7 +92,7 @@ class UnixConfig {
             ? UnixInterpreter.bash
             : UnixInterpreter.values.firstWhere(
                 (i) => i.value == json['interpreter'],
-                orElse: () => throw RpsException(
+                orElse: () => throw RpsConfigException(
                   'Provided Unix interpreter (${json['interpreter']}) is not '
                   'supported. '
                   'Supported values are: '

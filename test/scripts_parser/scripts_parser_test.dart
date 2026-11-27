@@ -1,8 +1,7 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
 import 'package:test/test.dart';
 
-import '../mocks/fake_file_system.dart';
+import '../mocks/fake_executor.dart';
 import '../mocks/fake_platform.dart';
 import '../mocks/script_source.mock.dart';
 import '../mocks/stream_sink_controller.dart';
@@ -47,24 +46,6 @@ scripts:
 
 ''';
 
-class FakeExecutor extends Executor {
-  FakeExecutor({required this.exitCode, required this.executions})
-      : super(
-          interpreter: null,
-          platform: const FakePlatform(),
-          fs: FakeFileSystem(),
-        );
-
-  final int exitCode;
-  final List<String> executions;
-
-  @override
-  Future<int> execute(String command) async {
-    executions.add(command);
-    return exitCode;
-  }
-}
-
 void main() {
   final consoleSink = StreamSinkController();
   final executions = <String>[];
@@ -77,12 +58,15 @@ void main() {
   group('run command', () {
     final run = RunCommand(
       getScriptsSource: () => MockedScriptSource(mockedPubspecYaml),
-      executor: FakeExecutor(exitCode: 0, executions: executions),
+      runner: ScriptRunner(
+        executor: FakeExecutor(executions: executions),
+        console: Console(sink: consoleSink),
+      ),
       platform: const FakePlatform(),
     );
 
     test('Correctly executes command', () async {
-      await run.run(Console(sink: consoleSink), ['echo']);
+      await run.run(['echo']);
       expect(executions, equals(['echo "echo 123"']));
       expect(
         consoleSink.plainLines,
@@ -96,7 +80,7 @@ void main() {
     });
 
     test('Correctly executes hooks', () async {
-      await run.run(Console(sink: consoleSink), ['hook-1']);
+      await run.run(['hook-1']);
       expect(
         executions,
         equals([
@@ -125,7 +109,7 @@ void main() {
     });
 
     test('Correctly executes nested hooks', () async {
-      await run.run(Console(sink: consoleSink), ['hook-2', 'hook-2-nested']);
+      await run.run(['hook-2', 'hook-2-nested']);
       expect(
         executions,
         equals([
@@ -164,7 +148,7 @@ void main() {
     });
 
     test('Correctly executes referenced command', () async {
-      await run.run(Console(sink: consoleSink), ['ref']);
+      await run.run(['ref']);
       expect(
         executions,
         equals(['echo "echo 123"']),
@@ -185,7 +169,6 @@ void main() {
 
     test('Correctly executes references in hooks', () async {
       await run.run(
-        Console(sink: consoleSink),
         ['hook-ref'],
       );
       expect(
@@ -223,7 +206,6 @@ void main() {
 
     test('Correctly pass additional arguments and options', () async {
       await run.run(
-        Console(sink: consoleSink),
         ['echo-args', '123', '-v', '--help'],
       );
       expect(
@@ -246,7 +228,6 @@ void main() {
     test('Correctly pass additional arguments and options to nested scripts',
         () async {
       await run.run(
-        Console(sink: consoleSink),
         ['echo-args-nested', 'echo', '123', '-v', '--help'],
       );
       expect(
@@ -268,7 +249,6 @@ void main() {
 
     test('Do not pass arguments to hooks', () async {
       await run.run(
-        Console(sink: consoleSink),
         ['echo-args-hooks', 'echo', '123', '-v', '--help'],
       );
       expect(
@@ -310,7 +290,6 @@ void main() {
 
     test('Correctly pass positional arguments', () async {
       await run.run(
-        Console(sink: consoleSink),
         ['echo-positional', 'zero', 'one'],
       );
       expect(
@@ -332,7 +311,6 @@ void main() {
 
     test('Pass positional arguments to references', () async {
       await run.run(
-        Console(sink: consoleSink),
         ['echo-ref', 'zero', 'one'],
       );
       expect(
@@ -360,7 +338,6 @@ void main() {
       RpsException? exception;
       try {
         await run.run(
-          Console(sink: consoleSink),
           ['echo-hook-positional', 'zero'],
         );
       } on RpsException catch (err) {

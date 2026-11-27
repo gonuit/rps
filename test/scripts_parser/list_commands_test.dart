@@ -246,6 +246,20 @@ scripts:
       );
     });
 
+    test('runs rps with an option as a command, not as a reference', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource('''
+scripts:
+  test: rps --all test
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final events = parser.getCommandsToExecute(['test', 'x']);
+      expect(events, hasLength(1));
+      expect((events.single as CommandExecuted).compile(), 'rps --all test x');
+    });
+
     test('ignores trailing whitespace in references', () {
       final parser = ScriptsParser(
         source: MockedScriptSource('''
@@ -268,8 +282,465 @@ scripts:
 
       expect(
         () => parser.getCommandsToExecute(['a']),
-        throwsA(isA<ScriptParserException>()),
+        throwsA(isA<RpsConfigException>()),
       );
+    });
+
+    test('scripts inherit the error of their group', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  build:
+    $befor: echo typo
+    apk: echo apk
+  ok: echo ok
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final commands = parser.listCommands();
+      expect(commands.first.errors, equals([r'Unknown key: "$befor".']));
+      expect(commands.last.errors, isEmpty);
+      expect(
+        () => parser.getCommandsToExecute(['build', 'apk']),
+        throwsA(isA<RpsConfigException>()),
+      );
+      expect(parser.getCommandsToExecute(['ok']), hasLength(1));
+    });
+
+    test(r'commands use the nearest $cwd', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  $cwd: root-dir
+  plain: echo plain
+  app:
+    $cwd: packages/app
+    $before: echo before
+    build: echo build
+    android:
+      $cwd: packages/app/android
+      $script: echo android
+    ref: rps plain
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<String?> directories(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .map((e) => e.settings.cwd)
+          .toList();
+
+      expect(directories(['plain']), equals(['root-dir']));
+      expect(
+        directories(['app', 'build']),
+        equals(['packages/app', 'packages/app']),
+      );
+      expect(
+        directories(['app', 'android']),
+        equals(['packages/app', 'packages/app/android']),
+      );
+      expect(directories(['app', 'ref']), equals(['packages/app', 'root-dir']));
+      expect(
+        parser.listCommands().map((e) => e.workingDirectory),
+        equals([
+          'root-dir',
+          'packages/app',
+          'packages/app/android',
+          'packages/app'
+        ]),
+      );
+    });
+
+    test(r'commands merge $env and $envFile from their groups', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  $envFile: .env
+  $env: {A: root, B: root}
+  plain: echo plain
+  app:
+    $envFile: .env.app
+    $env: {B: app, C: app}
+    $after: echo after
+    build:
+      $env: {C: build}
+      $script: echo build
+    ref: rps plain
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<CommandExecuted> commands(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .toList();
+
+      final [build, after] = commands(['app', 'build']);
+      expect(build.settings.env, {'A': 'root', 'B': 'app', 'C': 'build'});
+      expect(build.settings.envFiles, equals(['.env', '.env.app']));
+      expect(after.settings.env, {'A': 'root', 'B': 'app', 'C': 'app'});
+
+      final [plain, _] = commands(['app', 'ref']);
+      expect(plain.settings.env, {'A': 'root', 'B': 'root'});
+      expect(plain.settings.envFiles, equals(['.env']));
+    });
+
+    group(r'$steps', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  clean: echo clean
+  build: echo build ${0}
+  release:
+    $before: echo before
+    $steps:
+      - rps clean
+      - echo ${1}
+      - rps build ${0}
+      - rps clean
+    $after: echo after
+  gap:
+    $steps:
+      - echo ${0}
+      - echo ${2}
+'''),
+        platform: const FakePlatform(),
+      );
+
+      test('resolves steps and references in order', () {
+        final events = parser.getCommandsToExecute(['release', 'apk', 'v1']);
+        final commands = events
+            .whereType<CommandExecuted>()
+            .map((e) => (e.compile(), e.step))
+            .toList();
+
+        expect(commands, [
+          ('echo before', null),
+          ('echo clean', null),
+          ('echo v1', (2, 4)),
+          ('echo build apk', null),
+          ('echo clean', null),
+          ('echo after', null),
+        ]);
+        expect(
+          events.whereType<CommandReferenced>().map((e) => e.step),
+          equals([(1, 4), (3, 4), (4, 4)]),
+        );
+      });
+
+      test('rejects additional arguments', () {
+        expect(
+          () => parser.getCommandsToExecute(['release', 'apk', 'v1', 'more']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            equals(
+              'The script "release" runs several commands, '
+              'so it does not accept additional arguments: more',
+            ),
+          )),
+        );
+      });
+
+      test('requires the arguments used by the steps', () {
+        expect(
+          () => parser.getCommandsToExecute(['release']),
+          throwsA(isA<RpsUsageException>()),
+        );
+        expect(
+          () => parser
+              .getCommandsToExecute(['release', 'apk'])
+              .whereType<CommandExecuted>()
+              .map((e) => e.compile())
+              .toList(),
+          throwsA(isA<RpsUsageException>()),
+        );
+      });
+
+      test('reports a gap in positional arguments', () {
+        expect(
+          parser.listCommands().last.errors.single,
+          contains(r'unused positional argument(s): ${1}'),
+        );
+        expect(
+          () => parser.getCommandsToExecute(['gap', 'a', 'b', 'c']),
+          throwsA(isA<RpsConfigException>()),
+        );
+      });
+    });
+
+    group(r'$args', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  build:
+    $args:
+      flavor: dev
+      target:
+    $script: flutter build ${target} --flavor ${ flavor } ${HOME} ${0}
+  short: rps build --target apk
+  release:
+    $args:
+      flavor:
+    $steps:
+      - echo releasing ${flavor}
+      - rps build --target ipa --flavor ${flavor} x
+  plain: echo
+'''),
+        platform: const FakePlatform(),
+      );
+
+      String compile(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .map((e) => e.compile())
+          .join(' && ');
+
+      test('fills declared names and leaves the rest to the shell', () {
+        expect(
+          compile(['build', '--target', 'apk', 'x']),
+          equals(r'flutter build apk --flavor dev ${HOME} x'),
+        );
+      });
+
+      test('accepts both forms, in any position, last one wins', () {
+        expect(
+          compile([
+            'build',
+            'x',
+            '--flavor=prod',
+            '--release',
+            '--target',
+            'apk',
+            '--target=ipa',
+          ]),
+          equals(r'flutter build ipa --flavor prod ${HOME} x --release'),
+        );
+      });
+
+      test('quotes values for the shell', () {
+        expect(
+          compile(['build', '--target', 'a b; rm', '--flavor=', 'x']),
+          equals(r"flutter build 'a b; rm' --flavor '' ${HOME} x"),
+        );
+      });
+
+      test('stops reading names after --', () {
+        expect(
+          compile(['build', '--target', 'apk', 'x', '--', '--flavor', 'p']),
+          equals(r'flutter build apk --flavor dev ${HOME} x --flavor p'),
+        );
+      });
+
+      test('reports missing arguments and values', () {
+        expect(
+          () => compile(['build', 'x']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            'The script "build" requires the argument(s): --target.',
+          )),
+        );
+        expect(
+          () => compile(['build', 'x', '--target']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            'The argument "--target" of the script "build" needs a value.',
+          )),
+        );
+      });
+
+      test('works through references and in steps', () {
+        expect(
+          compile(['short', 'x', '--flavor', 'qa']),
+          equals(r'flutter build apk --flavor qa ${HOME} x'),
+        );
+        expect(
+          compile(['release', '--flavor', 'prod']),
+          equals(
+            'echo releasing prod && '
+            r'flutter build ipa --flavor prod ${HOME} x',
+          ),
+        );
+      });
+
+      test('scripts without the key keep every argument', () {
+        expect(compile(['plain', '--flavor', 'x', '--']), 'echo --flavor x --');
+      });
+
+      test('lists the declared arguments', () {
+        expect(
+          parser.listCommands().first.declaredArguments.map((a) => a.name),
+          equals(['flavor', 'target']),
+        );
+      });
+    });
+
+    test(r'scripts with $confirm ask before they run', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  db:
+    reset:
+      $confirm: true
+      $before: echo before
+      $script: echo reset
+    drop:
+      $confirm: Drop everything?
+      $script: echo drop
+  all:
+    $steps:
+      - rps db reset
+      - rps db drop
+  safe: echo safe
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<String> questions(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<ConfirmationRequired>()
+          .map((e) => '${e.path}: ${e.message}')
+          .toList();
+
+      expect(
+        questions(['db', 'reset']),
+        equals(['db reset: Run the script "db reset"?']),
+      );
+      expect(
+        parser.getCommandsToExecute(['db', 'reset']).first,
+        isA<ConfirmationRequired>(),
+      );
+      expect(
+        questions(['all']),
+        equals([
+          'db reset: Run the script "db reset"?',
+          'db drop: Drop everything?',
+        ]),
+      );
+      expect(questions(['safe']), isEmpty);
+      expect(
+        parser.listCommands().map((e) => e.confirmation),
+        equals([
+          'Run the script "db reset"?',
+          'Drop everything?',
+          null,
+          null,
+        ]),
+      );
+    });
+
+    group(r'$parallel', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  analyze: dart analyze
+  test:
+    $confirm: true
+    $before: echo before
+    $script: dart test ${0}
+  verify:
+    $before: echo start
+    $parallel:
+      - rps analyze
+      - rps test ${0}
+      - echo ${0}
+    $after: echo done
+'''),
+        platform: const FakePlatform(),
+      );
+
+      test('resolves every branch on its own', () {
+        final events = parser.getCommandsToExecute(['verify', 'unit']);
+        final parallel = events.whereType<ParallelExecuted>().single;
+
+        expect(
+          events.map((e) => e.runtimeType.toString()),
+          equals(['CommandExecuted', 'ParallelExecuted', 'CommandExecuted']),
+        );
+        expect(parallel.path, equals('verify'));
+        expect(
+          parallel.branches.map((b) => b.label),
+          equals(['analyze', r'test ${0}', '3']),
+        );
+        expect(
+          [
+            for (final branch in parallel.branches)
+              branch.events
+                  .whereType<CommandExecuted>()
+                  .map((e) => e.compile())
+                  .toList(),
+          ],
+          equals([
+            ['dart analyze'],
+            ['echo before', 'dart test unit'],
+            ['echo unit'],
+          ]),
+        );
+        expect(
+          parallel.branches[1].events.whereType<ConfirmationRequired>(),
+          hasLength(1),
+        );
+      });
+
+      test('rejects additional arguments', () {
+        expect(
+          () => parser.getCommandsToExecute(['verify', 'unit', 'more']),
+          throwsA(isA<RpsUsageException>()),
+        );
+      });
+    });
+
+    test('detects a cycle through a hook', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  a:
+    $before: rps a
+    $script: echo a
+  build:
+    $before: rps check
+    apk: echo apk
+  check: rps build apk
+'''),
+        platform: const FakePlatform(),
+      );
+
+      expect(
+        () => parser.getCommandsToExecute(['a']),
+        throwsA(isA<RpsConfigException>().having(
+          (e) => e.message,
+          'message',
+          equals(r'Script cycle detected: a $before → a $before'),
+        )),
+      );
+      expect(
+        () => parser.getCommandsToExecute(['build', 'apk']),
+        throwsA(isA<RpsConfigException>()),
+      );
+    });
+
+    test('allows a script to be referenced more than once', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  clean: echo clean
+  build:
+    $before: rps clean
+    $script: echo build
+    $after: rps clean
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final commands = parser
+          .getCommandsToExecute(['build'])
+          .whereType<CommandExecuted>()
+          .map((e) => e.command);
+      expect(commands, equals(['echo clean', 'echo build', 'echo clean']));
     });
 
     test('defaults to run when no arguments', () {

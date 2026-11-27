@@ -12,28 +12,49 @@ class FakeFileSystem implements FileSystem {
     Map<String, List<String>>? directories,
     String currentDirectoryPath = '/project',
     String? resolvedPackagePath,
-  })  : files = files ?? {},
+  })  : files = {
+          for (final entry in (files ?? {}).entries)
+            _normalize(entry.key): entry.value,
+        },
         directories = directories ?? {},
         _currentDirectoryPath = currentDirectoryPath,
         _resolvedPackagePath = resolvedPackagePath;
+
+  static String _normalize(String path) => path.replaceAll(r'\', '/');
 
   @override
   String get currentDirectoryPath => _currentDirectoryPath;
 
   @override
-  bool fileExists(String path) => files.containsKey(path);
+  bool fileExists(String path) => files.containsKey(_normalize(path));
+
+  @override
+  bool directoryExists(String path) =>
+      directories.containsKey(_normalize(path)) ||
+      files.keys.any((file) => file.startsWith('${_normalize(path)}/'));
+
+  @override
+  List<String> listDirectoryPaths(String path) {
+    final prefix = '${_normalize(path)}/';
+    return {
+      for (final file in files.keys)
+        if (file.startsWith(prefix) &&
+            file.substring(prefix.length).contains('/'))
+          prefix + file.substring(prefix.length).split('/').first,
+    }.toList();
+  }
 
   @override
   String readFile(String path) {
-    final content = files[path];
+    final content = files[_normalize(path)];
     if (content == null) throw Exception('File not found: $path');
     return content;
   }
 
   @override
   void writeFile(String path, String contents) {
-    writtenFiles.add(path);
-    files[path] = contents;
+    writtenFiles.add(_normalize(path));
+    files[_normalize(path)] = contents;
   }
 
   @override

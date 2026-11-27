@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:test/test.dart';
@@ -85,6 +86,44 @@ void sharedE2eTests(RpsRunner run) {
     });
   });
 
+  group('ls --json', () {
+    test('prints scripts as JSON', () async {
+      final result = await run(['ls', '--json']);
+      final scripts = (jsonDecode(result.stdout) as Map)['scripts'] as List;
+      final target = scripts.firstWhere((s) => s['path'] == 'target');
+
+      expect(result.exitCode, equals(0));
+      expect(
+        scripts.map((s) => s['path']),
+        containsAll(['run', 'gen', 'build android apk', 'bab', 'reset']),
+      );
+      expect(
+        target,
+        equals({
+          'path': 'target',
+          'command': r'echo "flutter build ${0} -t lib/main.dart --release"',
+          'description': 'Builds the specified target using positional arg',
+          'arguments': [
+            {
+              'name': r'${0}',
+              'index': 0,
+              'option': null,
+              'required': true,
+              'default': null,
+            },
+          ],
+          'steps': null,
+          'parallel': null,
+          'cwd': null,
+          'env': <String>[],
+          'envFiles': <String>[],
+          'confirm': null,
+          'errors': [],
+        }),
+      );
+    });
+  });
+
   group('run command', () {
     test('executes a simple script', () async {
       final result = await run(['gen']);
@@ -104,19 +143,51 @@ void sharedE2eTests(RpsRunner run) {
       expect(output, contains('flutter run'));
     });
 
-    test('nonexistent script fails with exit code 1', () async {
+    test('nonexistent script fails with exit code 64', () async {
       final result = await run(['nonexistent']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Error!'));
+      expect(stripAnsi(result.stderr), contains('Run "rps ls"'));
     });
 
     test('nonexistent nested script fails without running hooks', () async {
       final result = await run(['build', 'nonexistent']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Missing script'));
       expect(stripAnsi(result.stdout), isNot(contains('flutter pub get')));
+    });
+  });
+
+  group('dry run', () {
+    for (final arguments in [
+      ['--dry-run', 'build', 'android', 'apk'],
+      ['-n', 'build', 'android', 'apk'],
+      ['run', '--dry-run', 'build', 'android', 'apk'],
+    ]) {
+      test('${arguments.join(' ')} prints commands only', () async {
+        final result = await run(arguments);
+        final lines = stripAnsi(result.stdout).split('\n');
+
+        expect(result.exitCode, equals(0));
+        expect(lines, contains('> build before'));
+        expect(lines, contains(r'$ echo "flutter pub get"'));
+        expect(
+          lines,
+          contains(r'$ echo "flutter build --release apk --flavor production"'),
+        );
+        expect(lines, contains(r'$ echo "Build done!"'));
+        expect(lines, isNot(contains('flutter pub get')));
+        expect(lines, isNot(contains('Build done!')));
+      });
+    }
+
+    test('fails for a missing script', () async {
+      final result = await run(['--dry-run', 'nonexistent']);
+
+      expect(result.exitCode, isNot(0));
+      expect(stripAnsi(result.stderr), contains('Missing script'));
     });
   });
 
@@ -143,7 +214,7 @@ void sharedE2eTests(RpsRunner run) {
     test('incomplete nested path fails', () async {
       final result = await run(['build', 'android']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Error!'));
     });
   });
@@ -224,6 +295,13 @@ void sharedE2eTests(RpsRunner run) {
       );
     });
 
+    test('missing positional argument fails with exit code 64', () async {
+      final result = await run(['target']);
+
+      expect(result.exitCode, equals(64));
+      expect(stripAnsi(result.stderr), contains('positional argument'));
+    });
+
     test('different positional arg value', () async {
       final result = await run(['target', 'appbundle']);
 
@@ -275,10 +353,10 @@ void sharedE2eTests(RpsRunner run) {
   });
 
   group('CI mode', () {
-    test('no args fails with exit code 1', () async {
+    test('no args fails with exit code 64', () async {
       final result = await run([], ci: true);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(
         stripAnsi(result.stderr),
         contains('No command has been matched'),

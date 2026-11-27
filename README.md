@@ -11,8 +11,17 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [🪝 Hooks](#-hooks)
 - [💻 Platform specific scripts](#-platform-specific-scripts)
 - [🎯 Positional arguments](#-positional-arguments)
+- [🏷 Named arguments](#-named-arguments)
+- [🪜 Steps](#-steps)
+- [🧵 Parallel scripts](#-parallel-scripts)
+- [🌱 Environment variables](#-environment-variables)
+- [📂 Working directory](#-working-directory)
+- [✋ Confirmation](#-confirmation)
+- [🗂 Workspaces](#-workspaces)
 - [📝 External scripts file](#-external-scripts-file)
 - [🛠 CLI options](#-cli-options)
+- [🚦 Exit codes](#-exit-codes)
+- [🤖 Using rps with AI agents](#-using-rps-with-ai-agents)
 
 ## Quick start 🚀
 
@@ -31,7 +40,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
     # you can also provide additional arguments
     rps gen --verbose
     ```
-4. Safe a time and become a power user! 😈
+4. Save time and become a power user! 😈
     
     Less time typing long commands more time watching funny cats. 🐈
 
@@ -61,6 +70,37 @@ Commands:
   build android (flutter build apk --flavor production -t lib/main.dart)
     Builds an Android app
 ```
+
+For tools and scripts, `rps ls --json` prints the same list as JSON:
+
+```json
+{
+  "scripts": [
+    {
+      "path": "build web",
+      "command": "flutter build web --flavor production -t lib/main.dart",
+      "description": "Builds a web application",
+      "arguments": [],
+      "steps": null,
+      "parallel": null,
+      "cwd": null,
+      "env": [],
+      "envFiles": [],
+      "confirm": null,
+      "errors": []
+    }
+  ]
+}
+```
+
+- `path` is what you type after `rps`.
+- `command` is the command for the current platform.
+- `description` is `null` when the script has none.
+- `arguments` lists the [positional](#-positional-arguments) and [named](#-named-arguments) arguments the script expects. A positional one has an `index`, a named one has an `option` such as `--flavor`, and both have `required` and `default`.
+- `steps` and `parallel` list the commands of a script that uses [`$steps`](#-steps) or [`$parallel`](#-parallel-scripts), otherwise they are `null`.
+- `cwd` is the [working directory](#-working-directory), `env` lists the names of the [environment variables](#-environment-variables) set for the script, and `envFiles` lists its env files.
+- `confirm` is the question the script asks before it runs, or `null`.
+- `errors` lists problems in the script definition. A script with errors cannot be run.
 
 ## 🪆 Nesting
 
@@ -102,6 +142,8 @@ scripts:
 ```
 
 References can also be used with `$before` and `$after` hooks.
+
+A command that passes an option to rps, such as `rps --all test`, is not a reference. It starts rps as any other command.
 
 ## 🪝 Hooks
 
@@ -198,6 +240,187 @@ A few rules to keep in mind:
 - Hooks (`$before` / `$after`) **do not** support positional arguments.
 - Trailing arguments are passed to the script literally, so characters such as spaces, quotes, `&` or `$` are not interpreted by the shell.
 
+## 🏷 Named arguments
+
+Positional arguments get hard to read when a script takes more than one or two. Declare named arguments with `$args` and use them as `${name}`:
+
+```yaml
+scripts:
+  build:
+    $args:
+      flavor: dev   # default value
+      target:       # no default, so it is required
+    $script: flutter build ${target} --flavor ${flavor}
+```
+
+```bash
+rps build --target apk
+rps build --target apk --flavor prod
+rps build --target=apk --flavor=prod --release
+```
+
+- Only declared names are filled in, so shell variables such as `${HOME}` keep working.
+- Arguments that are not declared, like `--release` above, are passed to the script as before. Everything after `--` is passed to the script too.
+- Values are quoted for the shell. Do not put a placeholder inside quotes of your own.
+- A missing required argument ends with [exit code](#-exit-codes) `64`.
+- Named and positional arguments can be used together. Hooks do not get arguments.
+
+## 🪜 Steps
+
+Run several commands one after another with `$steps`. A step is a command or a [reference](#-references). rps stops at the first step that fails and exits with its exit code.
+
+```yaml
+scripts:
+  analyze: dart analyze --fatal-infos
+  check:
+    $steps:
+      - dart format --set-exit-if-changed .
+      - rps analyze
+      - dart test
+```
+
+Unlike `&&`, this works the same in every shell, including PowerShell on Windows.
+
+- Use `$steps` instead of `$script`, not together with it.
+- Positional and named arguments are filled in every step. Other arguments are rejected, because there is no single command to add them to.
+- A step can be platform specific, like `$script`: `- { $default: rm -rf build, $windows: rd /s /q build }`.
+- Write steps that contain `${...}` as a list with dashes. Inside `[...]` YAML needs them in quotes.
+
+## 🧵 Parallel scripts
+
+Run commands at the same time with `$parallel`. Every line of the output starts with the name of the command it comes from.
+
+```yaml
+scripts:
+  analyze: dart analyze
+  test: dart test
+  verify:
+    $parallel:
+      - rps analyze
+      - rps test
+      - dart format --set-exit-if-changed .
+```
+
+```
+$ rps verify
+> verify (3 in parallel)
+
+[analyze] No issues found!
+[3      ] Formatted 42 files (0 changed) in 0.31 seconds.
+[test   ] 00:04 +128: All tests passed!
+```
+
+- A reference is labeled with its script, a plain command with its number.
+- When one command fails, the others are stopped and rps exits with the exit code of the failed one.
+- The commands have no terminal: they cannot ask for input, and most programs turn their colors off.
+- `$parallel` can be a step of `$steps`, and the other way round, through references.
+
+## 🌱 Environment variables
+
+Set environment variables with `$env`, for one script or for a whole group. A script inherits the variables of its groups, the closest one wins.
+
+```yaml
+scripts:
+  $env:
+    APP_ENV: dev
+  build:
+    $env:
+      APP_ENV: prod
+    $script: flutter build apk
+  run: flutter run
+```
+
+Variables can also come from a file. `$envFile` takes a path or a list of paths, relative to the project:
+
+```yaml
+scripts:
+  $envFile: .env
+  deploy:
+    $envFile: [.env, .env.deploy]
+    $script: dart run tool/deploy.dart
+```
+
+- A variable that is already set in your shell or in CI is **not** replaced by an env file, but it is replaced by `$env`.
+- With several files, a later file wins.
+- An env file has `NAME=value` lines. Empty lines and lines starting with `#` are skipped, a leading `export` is allowed, and values can be quoted.
+- An env file is read only when you ask for it. A missing file is an error.
+- Values are never printed by `rps ls` or `--dry-run`.
+
+## 📂 Working directory
+
+`$cwd` runs a script, or all scripts of a group, in another directory. The path is relative to the project.
+
+```yaml
+scripts:
+  app:
+    $cwd: packages/app
+    build: flutter build apk
+    test: flutter test
+```
+
+A directory that does not exist is an error.
+
+## ✋ Confirmation
+
+Add `$confirm` to a script that should not run by accident. rps asks before it runs anything, also when the script is a step of another script.
+
+```yaml
+scripts:
+  db:
+    reset:
+      $confirm: Drop the local database?
+      $script: dart run tool/reset_db.dart
+```
+
+```
+$ rps db reset
+Drop the local database? (y/N)
+```
+
+- `$confirm: true` asks a default question.
+- `rps --yes db reset` (or `-y`) answers yes. So does the `RPS_YES=1` environment variable.
+- Without a terminal, for example in CI, rps does not run the script unless `--yes` is given, and exits with code `64`.
+- `--dry-run` shows the question and does not ask.
+
+## 🗂 Workspaces
+
+In a [pub workspace](https://dart.dev/tools/pub/workspaces), `rps --all <script>` runs the script in every package that defines it. Each package keeps its own scripts, in its `pubspec.yaml` or `rps.yaml`.
+
+```
+$ rps --all test
+▶ core (packages/core)
+
+> test
+$ dart test
+
+▶ app (packages/app)
+
+> test
+$ flutter test
+
+✓ Ran "test" in 2 package(s).
+```
+
+- Packages that do not define the script are skipped. When no package defines it, rps exits with code `64`.
+- A package runs after the workspace packages it depends on. Otherwise the order of the `workspace` list is kept.
+- Every script runs in the directory of its package, so `$cwd` and `$envFile` are relative to that package.
+- The workspace is found from the current directory upwards, so the command works from any package. The root package itself is not run.
+- Arguments after the script name are passed to the script in every package.
+- rps stops at the first package that fails. With `--continue` it runs the remaining packages and exits with the code of the first failure.
+- `--parallel` runs the packages at the same time and labels every line with the package name, as in [parallel scripts](#-parallel-scripts). The dependency order is not kept then.
+- `--dry-run` shows what would run in which package. [Confirmations](#-confirmation) of all packages are asked before anything runs.
+
+Because the root is not run, it can offer the same script for the whole workspace:
+
+```yaml
+# pubspec.yaml of the workspace root
+scripts:
+  test: rps --all test
+  analyze: rps --all --parallel analyze
+```
+
+Patterns in the `workspace` list are supported with `*` within a path segment, such as `packages/*`.
+
 ## 📝 External scripts file
 
 If you prefer to keep your scripts separate from your `pubspec.yaml`, you can define them in an external **`rps.yaml`** file. When an `rps.yaml` file is present in your project's root directory, rps will use it as the scripts source **instead of the scripts in `pubspec.yaml`**.
@@ -224,11 +447,9 @@ Using `rps.yaml` allows you to keep your `pubspec.yaml` file focused on dependen
 
 ### Picking an interpreter
 
-The same `rps.yaml` lets you choose the shell that runs your scripts on each platform:
+The same `rps.yaml` lets you choose the shell that runs your scripts on Linux and macOS. On Windows scripts always run in PowerShell.
 
 ```yaml
-windows:
-  interpreter: cmd        # cmd | powershell (default)
 linux:
   interpreter: zsh        # bash (default) | sh | zsh
 macos:
@@ -242,6 +463,66 @@ macos:
 | `-h`, `--help`    | Print help.                                                                |
 | `--version`       | Print rps version.                                                         |
 | `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
+| `-n`, `--dry-run` | Print the commands of a script, with hooks, without running them.          |
+| `-y`, `--yes`     | Confirm scripts that ask for [confirmation](#-confirmation).               |
+| `-a`, `--all`     | Run the script in every package of the [workspace](#-workspaces).          |
+| `--continue`      | With `--all`, keep going after the script fails in a package.              |
+| `--parallel`      | With `--all`, run the packages at the same time.                           |
+| `--no-color`      | Disable colored output.                                                    |
+
+These options go before the script name, for example `rps --dry-run build apk` or `rps run --dry-run build apk`. Everything after the script name is passed to the script.
+
+```
+$ rps --dry-run build android apk
+> build before
+$ flutter pub get
+
+> build android apk before
+$ echo "Building android apk..."
+
+> build android apk
+$ flutter build --release apk --flavor production
+
+> build after
+$ echo "Build done!"
+```
+
+Colors are also disabled when the output is not a terminal, when the `NO_COLOR` environment variable is set, or when `TERM` is `dumb`. The output of your scripts is never changed.
+
+rps checks for a new version once a day and shows a notice when one is available. The check runs only when the output is a terminal and not in CI. Set `RPS_NO_UPDATE_CHECK=1` to turn it off.
+
+## 🚦 Exit codes
+
+| Code  | Meaning                                                                                                                                        |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`   | Success.                                                                                                                                       |
+| `64`  | The script does not exist, the path is incomplete, an argument is missing or not accepted, an option is unknown, or a script needs `--yes`.     |
+| `78`  | Configuration problem: `pubspec.yaml` or `rps.yaml` is missing or invalid, there is no `scripts` key, a script is defined incorrectly, or `--all` is used outside of a workspace. |
+| `1`   | Any other rps error, or a [confirmation](#-confirmation) that was declined.                                                                    |
+| other | The exit code of the failed script or hook, passed through unchanged.                                                                          |
+
+rps stops at the first command that fails. A script can itself exit with `1`, `64` or `78`; the error message on stderr tells the two cases apart.
+
+## 🤖 Using rps with AI agents
+
+rps works without a terminal, so coding agents and other tools can use it the same way as CI does.
+
+- **Find the scripts** with `rps ls --json`. Each entry has the path to run, the command, a description, the positional arguments and any errors. Add a `$description` to your scripts, the agent reads it to pick the right one.
+- **Check before running** with `rps --dry-run <script>`. It prints every command that would run, hooks included, and runs nothing.
+- **Confirm on purpose.** A script with a `confirm` question in `rps ls --json` does not run without a terminal. Pass `rps --yes <script>` only when running it is really intended.
+- **Run** with `rps <script> [arguments]`. Without a terminal there is no menu, no update notice and no colors.
+- **Run across a workspace** with `rps --all <script>`. Add `--dry-run` to see which packages define the script.
+- **Read the result** from the [exit code](#-exit-codes). Errors of rps go to stderr, the output of the script is passed through as it is.
+
+If the agent runs in a terminal emulator, set `CI=1` to turn off the menu and the update notice, and `NO_COLOR=1` to turn off colors.
+
+A short note for your `AGENTS.md` or `CLAUDE.md`:
+
+```markdown
+Project scripts are run with rps. List them with `rps ls --json`,
+preview one with `rps --dry-run <script>` and run it with `rps <script>`.
+Exit code 64 means the script does not exist, 78 means a configuration error.
+```
 
 ## 🔎 Overview example
 
@@ -296,11 +577,7 @@ ___
 
 ## Supported platforms
 
-| Platform |  x64  | Arm64 |
-| :------- | :---: | :---: |
-| Linux    |   ✅   |   ✅   |
-| Windows  |   ✅   |   ❌   |
-| MacOs    |   ✅   |   ✅   |
+rps is written in pure Dart and runs on every desktop platform the Dart SDK supports: Linux, macOS and Windows.
 
 
 ---

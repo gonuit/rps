@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:rps/rps.dart';
 
 /// A positional argument placeholder parsed from a command string.
@@ -15,6 +13,39 @@ class PositionalArgument {
     this.name,
     this.index,
   );
+
+  static final _placeholder = RegExp(r'\$\{\s*([0-9]+)\s*\}');
+
+  /// Extracts positional argument placeholders from [command],
+  /// sorted by index.
+  ///
+  /// Unless [contiguous] is disabled, the indexes must start
+  /// at 0 and have no gaps.
+  static List<PositionalArgument> parse(
+    String command, {
+    bool contiguous = true,
+  }) {
+    final indexes = {
+      for (final match in _placeholder.allMatches(command))
+        int.parse(match[1]!),
+    }.toList()
+      ..sort();
+    if (contiguous &&
+        indexes.isNotEmpty &&
+        indexes.length != indexes.last + 1) {
+      final unused = [
+        for (var index = 0; index < indexes.last; index++)
+          if (!indexes.contains(index)) '\${$index}',
+      ];
+      throw RpsConfigException(
+        'The script defines unused positional argument(s): '
+        '${unused.join(', ')}',
+      );
+    }
+    return [
+      for (final index in indexes) PositionalArgument('\${$index}', index)
+    ];
+  }
 
   @override
   int get hashCode => Object.hash(name, index);
@@ -39,43 +70,44 @@ class CommandExecuted extends ExecutionEvent {
   /// Arguments that were provided to this command.
   final List<String> arguments;
 
-  /// Arguments parsed from command.
+  /// Values of the named arguments, by name.
+  final Map<String, String> named;
+
+  /// Positional arguments used by the command, sorted by index.
   ///
-  /// When null, parsing of the command has failed and [errors] list
-  /// should contain the reason.
-  ///
-  /// The list is always sorted in ascending order based
-  /// on the positional argument index.
+  /// Empty when the command could not be parsed; [errors] has the reason.
   final List<PositionalArgument> commandArguments;
 
   /// Whether this command is coming from hook.
   final bool isHook;
 
+  /// Position among the steps of the script and their count, if any.
+  ///
+  /// A step uses the arguments it refers to and ignores the rest.
+  final (int, int)? step;
+
   @override
   String get path => context.path.join(' ');
-
-  /// Optional human-readable description of this command.
-  final String? description;
 
   /// Errors encountered while parsing this command.
   final List<String> errors;
 
-  /// Returns a combined error message, or null if there are no errors.
-  String? get errorMessage {
-    final message = errors.whereType<String>().join('\n');
-    return message.isEmpty ? null : message;
-  }
+  /// Where and how the command runs.
+  final ExecutionSettings settings;
 
-  static final _positionalArgumentsRegexp = RegExp(r'\$\{\s{0,}[0-9]+\s{0,}\}');
+  /// Returns a combined error message, or null if there are no errors.
+  String? get errorMessage => errors.isEmpty ? null : errors.join('\n');
 
   CommandExecuted._internal({
     required this.command,
     required this.context,
     required this.arguments,
     required this.errors,
-    required this.description,
     required this.isHook,
+    required this.step,
+    required this.named,
     required this.commandArguments,
+    required this.settings,
   });
 
   /// Creates a [CommandExecuted], parsing positional arguments from [command].
@@ -83,131 +115,73 @@ class CommandExecuted extends ExecutionEvent {
     required String command,
     required Context context,
     List<String>? arguments,
-    String? description,
+    Map<String, String> named = const {},
     bool isHook = false,
-    List<String>? errors,
+    (int, int)? step,
+    ExecutionSettings settings = const ExecutionSettings(),
   }) {
-    final errorsList = errors != null ? List<String>.of(errors) : <String>[];
-    List<PositionalArgument>? scriptArguments;
+    final errors = <String>[];
+    var commandArguments = const <PositionalArgument>[];
     try {
-      scriptArguments = getScriptArguments(command);
+      commandArguments = PositionalArgument.parse(
+        command,
+        contiguous: step == null,
+      );
     } on RpsException catch (err) {
-      errorsList.add(err.message);
-      scriptArguments = const [];
+      errors.add(err.message);
     }
 
     return CommandExecuted._internal(
       command: command,
       context: context,
       arguments: arguments ?? const [],
-      errors: errorsList,
-      commandArguments: scriptArguments,
-      description: description,
+      errors: errors,
+      commandArguments: commandArguments,
       isHook: isHook,
+      step: step,
+      named: named,
+      settings: settings,
     );
   }
 
-  /// Extracts positional argument placeholders from [command].
-  static List<PositionalArgument> getScriptArguments(String command) {
-    final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
-    final arguments = <int>{};
-    for (final match in argumentsInCommand) {
-      final content = match.group(0)!;
-      final value = content.substring(2, content.length - 1).trim();
-      final argumentIndex = int.tryParse(value);
-      if (argumentIndex == null) {
-        throw RpsException(
-          'Bad argument script ($content). '
-          'Only positional arguments are supported.',
+  String _fill(Shell shell) {
+    final names = named.keys.map(RegExp.escape).join('|');
+    final pattern = RegExp(
+      named.isEmpty
+          ? r'\$\{\s*([0-9]+)\s*\}'
+          : '\\\$\\{\\s*(?:([0-9]+)|($names))\\s*\\}',
+    );
+    return command.replaceAllMapped(pattern, (match) {
+      final digits = match[1];
+      if (digits == null) return shell.quote(named[match[2]!]!);
+      final index = int.parse(digits);
+      if (index >= arguments.length) {
+        throw RpsUsageException(
+          'The script "$path" defines a positional argument ${match[0]}, '
+          'but ${arguments.length} positional argument(s) are given.',
         );
       }
-      arguments.add(argumentIndex);
-    }
-
-    // Convert to list and sort ascending.
-    final argumentsList = arguments.toList()..sort();
-    if (argumentsList.isNotEmpty &&
-        argumentsList.length != (argumentsList.last + 1)) {
-      final allArguments = List.generate(argumentsList.last, (i) => i);
-      final unusedArguments =
-          allArguments.where((arg) => !argumentsList.contains(arg));
-      throw RpsException(
-        'The script defines unused positional argument(s): '
-        '${unusedArguments.map((arg) => '\${$arg}').join(', ')}',
-      );
-    }
-
-    return argumentsList
-        .map((arg) => PositionalArgument('\${$arg}', arg))
-        .toList();
-  }
-
-  String? _serializeArguments(List<String> arguments, ShellSyntax syntax) {
-    if (arguments.isEmpty) return null;
-    return arguments.map((arg) => quoteArgument(arg, syntax)).join(' ');
+      return arguments[index];
+    });
   }
 
   /// Compiles the command. Returns the command ready for execution.
-  String compile({ShellSyntax syntax = ShellSyntax.posix}) {
+  String compile({Shell shell = const PosixShell()}) {
     final errorMessage = this.errorMessage;
     if (errorMessage != null) {
-      throw RpsException(errorMessage);
+      throw RpsConfigException(errorMessage);
     }
-
-    final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
-
-    if (argumentsInCommand.isNotEmpty) {
-      if (isHook) {
-        throw RpsException(
-          'The script "$path" defines a positional argument(s), '
-          'but hooks do not support positional arguments.',
-        );
-      }
-
-      final usedArguments = <int>{};
-      final filledCommand = command.replaceAllMapped(
-        _positionalArgumentsRegexp,
-        (match) {
-          final content = match.group(0)!;
-          final value = content.substring(2, content.length - 1).trim();
-          final argumentIndex = int.tryParse(value);
-          if (argumentIndex == null) {
-            throw RpsException(
-              'Bad argument script ($content). '
-              'Only positional arguments are supported.',
-            );
-          } else if (argumentIndex >= arguments.length) {
-            throw RpsException(
-              'The script "$path" defines a positional argument $content, '
-              'but ${arguments.length} positional argument(s) are given.',
-            );
-          } else {
-            usedArguments.add(argumentIndex);
-            return arguments[argumentIndex];
-          }
-        },
+    if (isHook && commandArguments.isNotEmpty) {
+      throw RpsConfigException(
+        'The script "$path" defines a positional argument(s), '
+        'but hooks do not support positional arguments.',
       );
-
-      final lastUsed = usedArguments.reduce(math.max);
-      if (lastUsed >= usedArguments.length) {
-        final unusedArguments = List<int>.generate(lastUsed, (index) => index)
-            .where((e) => !usedArguments.contains(e));
-
-        throw RpsException(
-          'The script defines unused positional argument(s): '
-          '${unusedArguments.map((a) => '\${$a}').join(', ')}',
-        );
-      }
-
-      return [
-        filledCommand,
-        _serializeArguments(arguments.sublist(lastUsed + 1), syntax)
-      ].nonNulls.join(' ');
-    } else {
-      return [command, _serializeArguments(arguments, syntax)]
-          .nonNulls
-          .join(' ');
     }
+
+    final filled = _fill(shell);
+    final trailing = arguments.skip(commandArguments.length);
+    if (step != null || trailing.isEmpty) return filled;
+    return '$filled ${trailing.map(shell.quote).join(' ')}';
   }
 
   @override

@@ -1,43 +1,28 @@
-import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/bindings/execute.dart' as bindings;
-import 'package:rps/src/utils/file_system.dart';
-import 'package:rps/src/utils/platform.dart';
+import 'package:rps/rps.dart' as rps;
 
-/// Wraps the native [execute] binding with interpreter and verbosity settings.
+/// Runs commands in the configured shell.
 class Executor {
-  /// Optional interpreter override for command execution.
-  final Interpreter? interpreter;
-
-  /// Whether to print verbose diagnostic output.
-  final bool verbose;
-
-  /// Optional sink for verbose output.
-  final StringSink? out;
-
-  final Platform _platform;
-  final FileSystem _fs;
+  /// The shell that runs the commands.
+  final rps.Shell shell;
 
   /// Creates an [Executor].
-  Executor({
-    required this.interpreter,
-    required Platform platform,
-    required FileSystem fs,
-    this.verbose = false,
-    this.out,
-  })  : _platform = platform,
-        _fs = fs;
+  Executor({required this.shell});
 
-  /// Executes the given shell [command] and returns the exit code.
+  /// Executes [command] in [shell], or in the configured one, and returns
+  /// the exit code.
   Future<int> execute(
-    String command,
-  ) {
-    return bindings.execute(
+    String command, {
+    rps.Shell? shell,
+    Map<String, String>? environment,
+    String? workingDirectory,
+    rps.CommandOutput? output,
+  }) {
+    return rps.execute(
       command,
-      interpreter: interpreter,
-      verbose: verbose,
-      out: out,
-      platform: _platform,
-      fs: _fs,
+      shell: shell ?? this.shell,
+      environment: environment,
+      workingDirectory: workingDirectory,
+      output: output,
     );
   }
 }
