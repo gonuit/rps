@@ -1,12 +1,11 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/cli.dart';
+import 'package:rps/src/cli/arguments.dart';
 import 'package:rps/src/cli/cli_options/help.dart';
 import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/commands/script_selection.dart';
 import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/cli/global_flags.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/update_notifier.dart';
@@ -27,14 +26,14 @@ Future<int> runCli(
   required Clock clock,
   Executor? executor,
 }) async {
-  final flags = GlobalFlags.parse(args);
-  final color = !flags.noColor && !environment.noColor;
+  final color = !RpsArguments.disablesColor(args) && !environment.noColor;
   final out = console.withAnsi(color && environment.stdoutHasTerminal);
   final errors = Console(
     sink: errorSink,
     ansi: color && environment.stderrHasTerminal,
   );
   try {
+    final arguments = RpsArguments.parse(args);
     final package = await RpsPackage.load(fs: fs);
     if (shouldCheckForUpdates(environment)) {
       await UpdateNotifier.forPackage(
@@ -57,51 +56,53 @@ Future<int> runCli(
       }
     }
 
-    executor ??= Executor(
-      shell: Shell.of(config.getInterpreter(platform), platform),
-    );
+    final shell = Shell.of(config.getInterpreter(platform), platform);
+    final runExecutor = executor ?? Executor(shell: shell);
 
-    final help = HelpOption(console: out, package: package);
-    final cli = Cli(
-      package: package,
-      console: out,
-      commands: [
-        if (!environment.isCI && environment.hasTerminal)
-          ScriptSelectionCommand(
+    switch (arguments.action) {
+      case RpsAction.help:
+        printHelp(out, package);
+      case RpsAction.version:
+        printVersion(out, package);
+      case RpsAction.upgrade:
+        await upgrade(out, platform);
+      case RpsAction.list:
+        await LsCommand(
+          getScriptsSource: getScriptSource,
+          platform: platform,
+        ).run(out, json: arguments.json);
+      case RpsAction.run:
+        await RunCommand(
+          getScriptsSource: getScriptSource,
+          executor: runExecutor,
+          dryRun: arguments.dryRun,
+          platform: platform,
+        ).run(out, arguments.script);
+      case RpsAction.select:
+        if (environment.isCI) {
+          throw RpsUsageException('No command has been matched.');
+        } else if (environment.hasTerminal) {
+          await ScriptSelectionCommand(
             getScriptsSource: getScriptSource,
-            executor: executor,
-            dryRun: flags.dryRun,
+            executor: runExecutor,
+            dryRun: arguments.dryRun,
             platform: platform,
-          ),
-        LsCommand(
-          getScriptsSource: getScriptSource,
-          platform: platform,
-        ),
-        RunCommand(
-          getScriptsSource: getScriptSource,
-          executor: executor,
-          dryRun: flags.dryRun,
-          platform: platform,
-        ),
-      ],
-      options: [
-        help,
-        const VersionOption(),
-        UpgradeOption(platform: platform),
-      ],
-      fallback: environment.isCI ? null : help,
-    );
-
-    await cli.run(flags.arguments);
+          ).run(out);
+        } else {
+          printHelp(out, package);
+        }
+    }
     return 0;
   } on RpsException catch (err) {
     errors.writeln('${boldRed('Error!')} ${err.message}');
     if (err is RpsUsageException) {
-      errors.writeln('Run "rps ls" to see the available scripts.');
+      errors.writeln(err.hint);
     }
     return err.exitCode;
   } catch (err) {
     errors.writeln('${boldRed('Error!')} $err');
     return ExitCodes.error;
+  } finally {
+    await out.flush();
   }
 }

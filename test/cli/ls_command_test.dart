@@ -23,25 +23,25 @@ scripts:
       $nope: echo nope
 ''';
 
-Future<StreamSinkController> _ls(List<String> arguments) async {
+Future<StreamSinkController> _ls({bool json = false}) async {
   final sink = StreamSinkController();
   await LsCommand(
     getScriptsSource: () => MockedScriptSource(_scripts),
     platform: const FakePlatform(),
-  ).run(Console(sink: sink, ansi: false), arguments);
+  ).run(Console(sink: sink, ansi: false), json: json);
   return sink;
 }
 
 void main() {
   group('LsCommand', () {
     test('prints a readable list by default', () async {
-      final sink = await _ls(['ls']);
+      final sink = await _ls();
       expect(sink.lines.first, equals('Commands:'));
       expect(sink.lines, contains('  hello (echo hello)'));
     });
 
     test('prints JSON with --json', () async {
-      final sink = await _ls(['ls', '--json']);
+      final sink = await _ls(json: true);
       final scripts = (jsonDecode(sink.lines.join('\n')) as Map)['scripts'];
 
       expect(
@@ -100,7 +100,7 @@ void main() {
       await LsCommand(
         getScriptsSource: () => MockedScriptSource('scripts: {}'),
         platform: const FakePlatform(),
-      ).run(Console(sink: sink), ['ls', '--json']);
+      ).run(Console(sink: sink), json: true);
 
       expect(jsonDecode(sink.lines.join('\n')), equals({'scripts': []}));
     });

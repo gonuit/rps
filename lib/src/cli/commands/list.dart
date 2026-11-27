@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `ls` command that lists all available scripts.
-class LsCommand implements Command {
+class LsCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
   final Platform _platform;
 
@@ -17,27 +16,12 @@ class LsCommand implements Command {
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  @override
-  String get description =>
-      'List all commands. Add --json for machine-readable output.';
-
-  @override
-  String get name => 'ls';
-
-  @override
-  String get tooltip => 'ls [--json]';
-
-  @override
-  bool match(List<String> arguments) {
-    return arguments.isNotEmpty && arguments[0] == 'ls';
-  }
-
-  @override
-  Future<void> run(Console console, List<String> arguments) async {
+  /// Prints the scripts to [console], as JSON when [json] is set.
+  Future<void> run(Console console, {bool json = false}) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
-    if (arguments.skip(1).contains('--json')) {
+    if (json) {
       console.writeln(const JsonEncoder.withIndent('  ').convert({
         'scripts': [
           for (final command in commands)

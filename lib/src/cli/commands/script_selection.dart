@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
-class ScriptSelectionCommand implements Command {
+class ScriptSelectionCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
   /// The executor used to run shell commands.
@@ -27,23 +26,8 @@ class ScriptSelectionCommand implements Command {
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  @override
-  String get description =>
-      'Call without arguments to select a command to run.';
-
-  @override
-  Null get name => null;
-
-  @override
-  Null get tooltip => null;
-
-  @override
-  bool match(List<String> arguments) {
-    return arguments.isEmpty;
-  }
-
-  @override
-  Future<void> run(Console console, List<String> arguments) async {
+  /// Asks for a script and its arguments, then runs it.
+  Future<void> run(Console console) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();

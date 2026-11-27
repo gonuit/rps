@@ -35,8 +35,14 @@ class RpsException implements Exception {
 
 /// A script that does not exist or is called with the wrong arguments.
 class RpsUsageException extends RpsException {
+  /// What the user can do next.
+  final String hint;
+
   /// Creates an [RpsUsageException].
-  RpsUsageException(super.message, [super.error, super.stackTrace]);
+  RpsUsageException(
+    super.message, {
+    this.hint = 'Run "rps ls" to see the available scripts.',
+  });
 
   @override
   int get exitCode => ExitCodes.usage;

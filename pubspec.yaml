@@ -83,6 +83,7 @@ scripts:
     echo "flutter pub get"
 
 dependencies:
+  args: ^2.5.0
   yaml: ^3.1.2
   path: ^1.8.3
   meta: ^1.10.0

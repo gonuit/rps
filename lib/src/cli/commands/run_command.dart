@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
-class RunCommand implements Command {
+class RunCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
   /// The executor used to run shell commands.
@@ -27,24 +26,8 @@ class RunCommand implements Command {
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  @override
-  String get description =>
-      'This runs an arbitrary command from a pubspec\'s "scripts" object. '
-      'If no "command" is provided, it will list the available scripts.';
-
-  @override
-  String get name => 'run';
-
-  @override
-  String get tooltip => 'run [--dry-run] <pubspec script> [arguments]';
-
-  @override
-  bool match(List<String> arguments) {
-    return arguments.isNotEmpty;
-  }
-
   List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
-    if (arguments.firstOrNull != name) {
+    if (arguments.firstOrNull != 'run') {
       return parser.getCommandsToExecute(arguments);
     }
     try {
@@ -58,7 +41,7 @@ class RunCommand implements Command {
     }
   }
 
-  @override
+  /// Runs the script that [arguments] point to, with its hooks.
   Future<void> run(Console console, List<String> arguments) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
