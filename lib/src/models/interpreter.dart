@@ -1,15 +1,11 @@
 /// Specifies the interpreter that will be used to execute the command.
 abstract interface class Interpreter {
-  /// The value/name of the interpreter that corresponds
-  /// to the value expected by the native library.
+  /// The name of the interpreter executable.
   String get value;
 }
 
 /// Defines possible windows interpreters
 enum WindowsInterpreter implements Interpreter {
-  /// Windows Command Prompt.
-  cmd('cmd'),
-
   /// Windows PowerShell.
   powershell('powershell');
 

@@ -160,7 +160,7 @@ void main() {
         arguments: ["it's"],
       );
       expect(
-        cmd.compile(syntax: ShellSyntax.powershell),
+        cmd.compile(shell: const PowerShell()),
         equals("echo 'it''s'"),
       );
     });

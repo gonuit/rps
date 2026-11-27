@@ -1,7 +1,3 @@
-# Native library source and build config. Only the compiled binaries in
-# native/ are used at runtime via FFI; consumers don't build from source.
-rps_lib/
-
 # Tests are not needed by package consumers.
 test/
 

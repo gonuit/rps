@@ -7,7 +7,6 @@ import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
 
-import '../mocks/fake_platform.dart';
 import '../mocks/stream_sink_controller.dart';
 import 'shared_e2e_tests.dart';
 
@@ -20,14 +19,24 @@ class _CiEnvironment implements Environment {
 
   @override
   bool get hasTerminal => true;
+
+  @override
+  bool get stdoutHasTerminal => true;
+
+  @override
+  bool get stderrHasTerminal => true;
+
+  @override
+  bool get noColor => false;
+
+  @override
+  bool get updateCheckDisabled => false;
 }
 
 class _NoOpExecutor extends Executor {
   _NoOpExecutor()
       : super(
-          interpreter: null,
-          platform: const FakePlatform(),
-          fs: const SystemFileSystem(),
+          shell: const PosixShell(),
         );
 
   @override

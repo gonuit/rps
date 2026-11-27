@@ -116,7 +116,7 @@ class CommandExecuted extends ExecutionEvent {
       final value = content.substring(2, content.length - 1).trim();
       final argumentIndex = int.tryParse(value);
       if (argumentIndex == null) {
-        throw RpsException(
+        throw RpsConfigException(
           'Bad argument script ($content). '
           'Only positional arguments are supported.',
         );
@@ -131,7 +131,7 @@ class CommandExecuted extends ExecutionEvent {
       final allArguments = List.generate(argumentsList.last, (i) => i);
       final unusedArguments =
           allArguments.where((arg) => !argumentsList.contains(arg));
-      throw RpsException(
+      throw RpsConfigException(
         'The script defines unused positional argument(s): '
         '${unusedArguments.map((arg) => '\${$arg}').join(', ')}',
       );
@@ -142,23 +142,23 @@ class CommandExecuted extends ExecutionEvent {
         .toList();
   }
 
-  String? _serializeArguments(List<String> arguments, ShellSyntax syntax) {
+  String? _serializeArguments(List<String> arguments, Shell shell) {
     if (arguments.isEmpty) return null;
-    return arguments.map((arg) => quoteArgument(arg, syntax)).join(' ');
+    return arguments.map(shell.quote).join(' ');
   }
 
   /// Compiles the command. Returns the command ready for execution.
-  String compile({ShellSyntax syntax = ShellSyntax.posix}) {
+  String compile({Shell shell = const PosixShell()}) {
     final errorMessage = this.errorMessage;
     if (errorMessage != null) {
-      throw RpsException(errorMessage);
+      throw RpsConfigException(errorMessage);
     }
 
     final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
 
     if (argumentsInCommand.isNotEmpty) {
       if (isHook) {
-        throw RpsException(
+        throw RpsConfigException(
           'The script "$path" defines a positional argument(s), '
           'but hooks do not support positional arguments.',
         );
@@ -172,12 +172,12 @@ class CommandExecuted extends ExecutionEvent {
           final value = content.substring(2, content.length - 1).trim();
           final argumentIndex = int.tryParse(value);
           if (argumentIndex == null) {
-            throw RpsException(
+            throw RpsConfigException(
               'Bad argument script ($content). '
               'Only positional arguments are supported.',
             );
           } else if (argumentIndex >= arguments.length) {
-            throw RpsException(
+            throw RpsUsageException(
               'The script "$path" defines a positional argument $content, '
               'but ${arguments.length} positional argument(s) are given.',
             );
@@ -193,7 +193,7 @@ class CommandExecuted extends ExecutionEvent {
         final unusedArguments = List<int>.generate(lastUsed, (index) => index)
             .where((e) => !usedArguments.contains(e));
 
-        throw RpsException(
+        throw RpsConfigException(
           'The script defines unused positional argument(s): '
           '${unusedArguments.map((a) => '\${$a}').join(', ')}',
         );
@@ -201,10 +201,10 @@ class CommandExecuted extends ExecutionEvent {
 
       return [
         filledCommand,
-        _serializeArguments(arguments.sublist(lastUsed + 1), syntax)
+        _serializeArguments(arguments.sublist(lastUsed + 1), shell)
       ].nonNulls.join(' ');
     } else {
-      return [command, _serializeArguments(arguments, syntax)]
+      return [command, _serializeArguments(arguments, shell)]
           .nonNulls
           .join(' ');
     }

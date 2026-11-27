@@ -268,7 +268,7 @@ scripts:
 
       expect(
         () => parser.getCommandsToExecute(['a']),
-        throwsA(isA<ScriptParserException>()),
+        throwsA(isA<RpsConfigException>()),
       );
     });
 

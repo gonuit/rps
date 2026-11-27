@@ -5,7 +5,14 @@ import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/pub_dev_api.dart';
 import 'package:rps/src/update_check/update_check_result.dart';
 import 'package:rps/src/update_check/update_checker.dart';
+import 'package:rps/src/utils/environment.dart';
 import 'package:rps/src/utils/rps_package.dart';
+
+/// Whether the update check may run in the given [environment].
+bool shouldCheckForUpdates(Environment environment) =>
+    !environment.isCI &&
+    environment.stdoutHasTerminal &&
+    !environment.updateCheckDisabled;
 
 /// Displays a bordered update banner when a newer version is available.
 class UpdateNotifier {

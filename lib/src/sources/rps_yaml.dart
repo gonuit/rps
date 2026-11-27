@@ -38,7 +38,7 @@ class RpsYaml implements ScriptsSource {
     final rpsPath = p.join(directoryPath, filename);
 
     if (!fs.fileExists(rpsPath)) {
-      throw RpsException(
+      throw RpsConfigException(
         'Cannot find $filename file in the current directory '
         '($directoryPath).',
       );
@@ -54,7 +54,7 @@ class RpsYaml implements ScriptsSource {
     } on RpsException {
       rethrow;
     } catch (err, st) {
-      throw RpsException(
+      throw RpsConfigException(
         'The rps.yaml file cannot be parsed. $err',
         err is Exception ? err : null,
         st,
@@ -66,7 +66,7 @@ class RpsYaml implements ScriptsSource {
   dynamic getScripts() {
     final scripts = data.scripts;
     if (scripts == null) {
-      throw RpsException('Missing scripts in the $filename file.');
+      throw RpsConfigException('Missing scripts in the $filename file.');
     }
     return scripts;
   }

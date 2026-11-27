@@ -2,44 +2,32 @@ import 'dart:async';
 
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
-class ScriptSelectionCommand implements Command {
+class ScriptSelectionCommand {
   final FutureOr<ScriptsSource> Function() _getScriptsSource;
 
   /// The executor used to run shell commands.
   final Executor executor;
+
+  /// Whether the selected script is printed instead of being run.
+  final bool dryRun;
 
   final Platform _platform;
 
   /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
     required this.executor,
+    this.dryRun = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  @override
-  String get description =>
-      'Call without arguments to select a command to run.';
-
-  @override
-  Null get name => null;
-
-  @override
-  Null get tooltip => null;
-
-  @override
-  bool match(List<String> arguments) {
-    return arguments.isEmpty;
-  }
-
-  @override
-  Future<void> run(Console console, List<String> arguments) async {
+  /// Asks for a script and its arguments, then runs it.
+  Future<void> run(Console console) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
@@ -57,7 +45,7 @@ class ScriptSelectionCommand implements Command {
     console.writeln('${boldGreen(r'$')} ${bold(selected.command)}\n');
 
     if (selected.errors.isNotEmpty) {
-      throw RpsException(selected.errors.join('\n'));
+      throw RpsConfigException(selected.errors.join('\n'));
     }
     final parameters = selected.commandArguments;
     final arguments = List.filled(parameters.length, '');
@@ -77,6 +65,7 @@ class ScriptSelectionCommand implements Command {
 
     await RunCommand(
       executor: executor,
+      dryRun: dryRun,
       getScriptsSource: () => source,
       platform: _platform,
     ).run(console, runCommandArguments);

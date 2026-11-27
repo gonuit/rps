@@ -37,6 +37,27 @@ void main() {
       await console.flush();
     });
 
+    test('keeps ANSI codes by default', () {
+      console.write(red('a'));
+      expect(sink.lines.join(), equals(red('a')));
+    });
+
+    test('strips ANSI codes when ansi is disabled', () {
+      Console(sink: sink, ansi: false)
+        ..write(red('a'))
+        ..writeln(bold('b'))
+        ..writeAll([green('c'), blue('d')], gray(','))
+        ..writeBordered([boldRed('e')]);
+      expect(sink.lines.join('\n'), isNot(contains('\x1B')));
+      expect(sink.lines.first, equals('ab'));
+      expect(sink.lines[1], equals('c,d┌─────┐'));
+    });
+
+    test('withAnsi keeps the sink', () {
+      console.withAnsi(false).write(red('a'));
+      expect(sink.lines, equals(['a']));
+    });
+
     test('visibleLength strips ANSI codes', () {
       final length = console.visibleLength(bold(red('hello')));
       expect(length, equals(5));

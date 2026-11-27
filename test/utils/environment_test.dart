@@ -10,6 +10,18 @@ class FakeEnvironment implements Environment {
 
   @override
   bool get hasTerminal => true;
+
+  @override
+  bool get stdoutHasTerminal => true;
+
+  @override
+  bool get stderrHasTerminal => true;
+
+  @override
+  bool get noColor => false;
+
+  @override
+  bool get updateCheckDisabled => false;
 }
 
 void main() {
@@ -31,6 +43,13 @@ void main() {
       expect(SystemEnvironment.isCIValue('false'), isFalse);
       expect(SystemEnvironment.isCIValue('FALSE'), isFalse);
       expect(SystemEnvironment.isCIValue('0'), isFalse);
+    });
+
+    test('isNoColorValue treats any non-empty value as set', () {
+      expect(SystemEnvironment.isNoColorValue('1'), isTrue);
+      expect(SystemEnvironment.isNoColorValue('false'), isTrue);
+      expect(SystemEnvironment.isNoColorValue(''), isFalse);
+      expect(SystemEnvironment.isNoColorValue(null), isFalse);
     });
 
     test('SystemEnvironment can be constructed', () {

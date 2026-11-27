@@ -13,6 +13,8 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [🎯 Positional arguments](#-positional-arguments)
 - [📝 External scripts file](#-external-scripts-file)
 - [🛠 CLI options](#-cli-options)
+- [🚦 Exit codes](#-exit-codes)
+- [🤖 Using rps with AI agents](#-using-rps-with-ai-agents)
 
 ## Quick start 🚀
 
@@ -61,6 +63,28 @@ Commands:
   build android (flutter build apk --flavor production -t lib/main.dart)
     Builds an Android app
 ```
+
+For tools and scripts, `rps ls --json` prints the same list as JSON:
+
+```json
+{
+  "scripts": [
+    {
+      "path": "build web",
+      "command": "flutter build web --flavor production -t lib/main.dart",
+      "description": "Builds a web application",
+      "arguments": [],
+      "errors": []
+    }
+  ]
+}
+```
+
+- `path` is what you type after `rps`.
+- `command` is the command for the current platform.
+- `description` is `null` when the script has none.
+- `arguments` lists the [positional arguments](#-positional-arguments) the script expects, for example `{"name": "${0}", "index": 0}`.
+- `errors` lists problems in the script definition. A script with errors cannot be run.
 
 ## 🪆 Nesting
 
@@ -224,11 +248,9 @@ Using `rps.yaml` allows you to keep your `pubspec.yaml` file focused on dependen
 
 ### Picking an interpreter
 
-The same `rps.yaml` lets you choose the shell that runs your scripts on each platform:
+The same `rps.yaml` lets you choose the shell that runs your scripts on Linux and macOS. On Windows scripts always run in PowerShell.
 
 ```yaml
-windows:
-  interpreter: cmd        # cmd | powershell (default)
 linux:
   interpreter: zsh        # bash (default) | sh | zsh
 macos:
@@ -242,6 +264,60 @@ macos:
 | `-h`, `--help`    | Print help.                                                                |
 | `--version`       | Print rps version.                                                         |
 | `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
+| `-n`, `--dry-run` | Print the commands of a script, with hooks, without running them.          |
+| `--no-color`      | Disable colored output.                                                    |
+
+`--dry-run` and `--no-color` go before the script name, for example `rps --dry-run build apk` or `rps run --dry-run build apk`. Everything after the script name is passed to the script.
+
+```
+$ rps --dry-run build android apk
+> build before
+$ flutter pub get
+
+> build android apk before
+$ echo "Building android apk..."
+
+> build android apk
+$ flutter build --release apk --flavor production
+
+> build after
+$ echo "Build done!"
+```
+
+Colors are also disabled when the output is not a terminal, when the `NO_COLOR` environment variable is set, or when `TERM` is `dumb`. The output of your scripts is never changed.
+
+rps checks for a new version once a day and shows a notice when one is available. The check runs only when the output is a terminal and not in CI. Set `RPS_NO_UPDATE_CHECK=1` to turn it off.
+
+## 🚦 Exit codes
+
+| Code  | Meaning                                                                                                                                        |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`   | Success.                                                                                                                                       |
+| `64`  | The script does not exist, the path is incomplete, a positional argument is missing, or an option is unknown.                                   |
+| `78`  | Configuration problem: `pubspec.yaml` or `rps.yaml` is missing or invalid, there is no `scripts` key, or a script is defined incorrectly.       |
+| `1`   | Any other rps error.                                                                                                                           |
+| other | The exit code of the failed script or hook, passed through unchanged.                                                                          |
+
+rps stops at the first command that fails. A script can itself exit with `1`, `64` or `78`; the error message on stderr tells the two cases apart.
+
+## 🤖 Using rps with AI agents
+
+rps works without a terminal, so coding agents and other tools can use it the same way as CI does.
+
+- **Find the scripts** with `rps ls --json`. Each entry has the path to run, the command, a description, the positional arguments and any errors. Add a `$description` to your scripts, the agent reads it to pick the right one.
+- **Check before running** with `rps --dry-run <script>`. It prints every command that would run, hooks included, and runs nothing.
+- **Run** with `rps <script> [arguments]`. Without a terminal there is no menu, no update notice and no colors.
+- **Read the result** from the [exit code](#-exit-codes). Errors of rps go to stderr, the output of the script is passed through as it is.
+
+If the agent runs in a terminal emulator, set `CI=1` to turn off the menu and the update notice, and `NO_COLOR=1` to turn off colors.
+
+A short note for your `AGENTS.md` or `CLAUDE.md`:
+
+```markdown
+Project scripts are run with rps. List them with `rps ls --json`,
+preview one with `rps --dry-run <script>` and run it with `rps <script>`.
+Exit code 64 means the script does not exist, 78 means a configuration error.
+```
 
 ## 🔎 Overview example
 
@@ -296,11 +372,7 @@ ___
 
 ## Supported platforms
 
-| Platform |  x64  | Arm64 |
-| :------- | :---: | :---: |
-| Linux    |   ✅   |   ✅   |
-| Windows  |   ✅   |   ❌   |
-| MacOs    |   ✅   |   ✅   |
+rps is written in pure Dart and runs on every desktop platform the Dart SDK supports: Linux, macOS and Windows.
 
 
 ---
