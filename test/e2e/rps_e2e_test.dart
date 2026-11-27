@@ -86,6 +86,41 @@ void main() {
       });
     });
 
+    group('environment', () {
+      const printEnv = "import 'dart:io';\n"
+          'void main() {\n'
+          '  final env = Platform.environment;\n'
+          "  stdout.write('<\${env['A']}|\${env['B']}|\${env['C']}>');\n"
+          '}\n';
+      const yaml = 'name: app\nscripts:\n'
+          '  \$envFile: .env\n'
+          '  \$env: {A: key}\n'
+          '  show: dart print_env.dart\n';
+
+      test(r'$env and $envFile reach the script', () async {
+        final result = await _runIn(
+          yaml,
+          ['show'],
+          files: {'print_env.dart': printEnv, '.env': 'A=file\nB=file\nC=file'},
+          environment: {'C': 'process'},
+        );
+
+        expect(result.stdout, contains('<key|file|process>'));
+        expect(result.exitCode, equals(0));
+      });
+
+      test('a missing env file exits with 78', () async {
+        final result = await _runIn(
+          yaml,
+          ['show'],
+          files: {'print_env.dart': printEnv},
+        );
+
+        expect(result.exitCode, equals(78));
+        expect(result.stderr, contains('The env file ".env" does not exist.'));
+      });
+    });
+
     group('exit codes', () {
       test('configuration errors exit with 78', () async {
         final noScripts = await _runIn('name: app\n', ['build']);

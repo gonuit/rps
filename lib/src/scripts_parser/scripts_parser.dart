@@ -22,6 +22,12 @@ abstract class ScriptsParser {
   /// Key for the working directory entry.
   static const cwdKey = r'$cwd';
 
+  /// Key for the environment variables entry.
+  static const envKey = r'$env';
+
+  /// Key for the env files entry.
+  static const envFileKey = r'$envFile';
+
   /// Returns `true` if [key] is a reserved special key.
   static bool isSpecialKey(String key) => switch (key) {
         scriptKey ||
@@ -29,7 +35,9 @@ abstract class ScriptsParser {
         afterKey ||
         descriptionKey ||
         defaultScriptKey ||
-        cwdKey =>
+        cwdKey ||
+        envKey ||
+        envFileKey =>
           true,
         _ => false,
       };
@@ -49,12 +57,18 @@ abstract class ScriptsParser {
 
 class _Scope {
   final String? cwd;
+  final Map<String, String> env;
+  final List<String> envFiles;
 
-  const _Scope({this.cwd});
+  const _Scope({this.cwd, this.env = const {}, this.envFiles = const []});
 
   _Scope enter(ScriptNode? node) {
     if (node == null) return this;
-    return _Scope(cwd: node.cwd ?? cwd);
+    return _Scope(
+      cwd: node.cwd ?? cwd,
+      env: {...env, ...node.env},
+      envFiles: [...envFiles, ...node.envFiles],
+    );
   }
 }
 
@@ -97,6 +111,8 @@ class _ScriptParser implements ScriptsParser {
           description: node.description,
           errors: errors,
           workingDirectory: scope.cwd,
+          environment: scope.env,
+          envFiles: scope.envFiles,
         );
       case ScriptGroup():
         for (final MapEntry(:key, :value) in node.children.entries) {
@@ -241,6 +257,8 @@ class _ScriptParser implements ScriptsParser {
         arguments: arguments,
         isHook: isHook,
         workingDirectory: scope.cwd,
+        environment: scope.env,
+        envFiles: scope.envFiles,
       );
       return;
     }

@@ -1,6 +1,9 @@
+import 'dart:io' as io;
+
 import 'package:path/path.dart' as p;
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/utils/env_file.dart';
 import 'package:rps/src/utils/file_system.dart';
 
 /// Prints and runs the commands of a resolved script.
@@ -15,6 +18,8 @@ class ScriptRunner {
   final bool dryRun;
 
   final FileSystem _fs;
+  final Map<String, String> _processEnvironment;
+  final _envFiles = <String, Map<String, String>>{};
 
   /// Creates a [ScriptRunner].
   ScriptRunner({
@@ -22,7 +27,9 @@ class ScriptRunner {
     required this.console,
     this.dryRun = false,
     FileSystem fs = const SystemFileSystem(),
-  }) : _fs = fs;
+    Map<String, String>? processEnvironment,
+  })  : _fs = fs,
+        _processEnvironment = processEnvironment ?? io.Platform.environment;
 
   /// Runs [events] in order and stops at the first command that fails.
   Future<void> run(List<ExecutionEvent> events) async {
@@ -66,6 +73,27 @@ class ScriptRunner {
     return path;
   }
 
+  Map<String, String> _envFile(String file) {
+    return _envFiles.putIfAbsent(file, () {
+      final path = p.normalize(p.join(_fs.currentDirectoryPath, file));
+      if (!_fs.fileExists(path)) {
+        throw RpsConfigException('The env file "$file" does not exist.');
+      }
+      return parseEnvFile(_fs.readFile(path), path: file);
+    });
+  }
+
+  Map<String, String>? _environment(CommandExecuted event) {
+    final environment = <String, String>{};
+    for (final file in event.envFiles) {
+      for (final MapEntry(key: name, :value) in _envFile(file).entries) {
+        if (!_processEnvironment.containsKey(name)) environment[name] = value;
+      }
+    }
+    environment.addAll(event.environment);
+    return environment.isEmpty ? null : environment;
+  }
+
   Future<void> _execute(CommandExecuted event) async {
     _header(
       event.context,
@@ -78,6 +106,7 @@ class ScriptRunner {
 
     final exitCode = await executor.execute(
       command,
+      environment: _environment(event),
       workingDirectory: _workingDirectory(event),
     );
     if (exitCode != 0) {

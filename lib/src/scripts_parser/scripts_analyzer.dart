@@ -41,12 +41,16 @@ class ScriptsAnalyzer {
     final before = _string(value[ScriptsParser.beforeKey]);
     final after = _string(value[ScriptsParser.afterKey]);
     final cwd = _cwd(value, errors);
+    final env = _env(value[ScriptsParser.envKey], errors);
+    final envFiles = _envFiles(value[ScriptsParser.envFileKey], errors);
 
     if (!value.containsKey(ScriptsParser.scriptKey)) {
       return ScriptGroup(
         before: before,
         after: after,
         cwd: cwd,
+        env: env,
+        envFiles: envFiles,
         error: _join(errors),
         children: {
           for (final key in value.keys)
@@ -63,6 +67,8 @@ class ScriptsAnalyzer {
       before: before,
       after: after,
       cwd: cwd,
+      env: env,
+      envFiles: envFiles,
       error: _join(errors),
     );
   }
@@ -92,6 +98,41 @@ class ScriptsAnalyzer {
     if (cwd == null || cwd is String) return cwd as String?;
     errors.add('The "${ScriptsParser.cwdKey}" key must be a path.');
     return null;
+  }
+
+  Map<String, String> _env(dynamic env, List<String> errors) {
+    if (env == null) return const {};
+    if (env is! Map) {
+      errors.add('The "${ScriptsParser.envKey}" key must be a map.');
+      return const {};
+    }
+    final variables = <String, String>{};
+    for (final MapEntry(key: name, :value) in env.entries) {
+      if (name is! String || name.isEmpty || name.contains('=')) {
+        errors.add('Invalid environment variable name: "$name".');
+      } else if (value is String || value is num || value is bool) {
+        variables[name] = '$value';
+      } else {
+        errors.add(
+          'The environment variable "$name" must be '
+          'a string, a number or a boolean.',
+        );
+      }
+    }
+    return variables;
+  }
+
+  List<String> _envFiles(dynamic files, List<String> errors) {
+    if (files == null) return const [];
+    if (files is String) return [files];
+    if (files is List && files.every((file) => file is String)) {
+      return files.cast<String>().toList();
+    }
+    errors.add(
+      'The "${ScriptsParser.envFileKey}" key must be a path '
+      'or a list of paths.',
+    );
+    return const [];
   }
 
   String? _join(List<String> errors) =>

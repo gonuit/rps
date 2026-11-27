@@ -20,6 +20,7 @@ Future<_Run> _run(
   bool dryRun = false,
   int exitCode = 0,
   FakeFileSystem? fs,
+  Map<String, String> processEnvironment = const {},
 }) async {
   final executor = FakeExecutor(exitCode: exitCode, executions: []);
   final output = StringBuffer();
@@ -32,6 +33,7 @@ Future<_Run> _run(
     console: Console(sink: output, ansi: false),
     dryRun: dryRun,
     fs: fs ?? FakeFileSystem(),
+    processEnvironment: processEnvironment,
   ).run(events);
   return _Run(executor, output.toString());
 }
@@ -66,6 +68,77 @@ scripts:
             .having((e) => e.exitCode, 'exitCode', 3)),
       );
       expect(executor.executions, equals(['echo before']));
+    });
+
+    group(r'$env', () {
+      const scripts = r'''
+scripts:
+  $envFile: .env
+  $env: {FROM_KEY: key, BOTH: key}
+  build:
+    $envFile: .env.build
+    $script: echo build
+  plain:
+    nested: echo plain
+''';
+
+      test('passes variables from the keys and the files', () async {
+        final run = await _run(
+          scripts,
+          ['build'],
+          fs: FakeFileSystem(files: {
+            '/project/.env': 'FROM_FILE=file\nBOTH=file\nOVERRIDDEN=first\n',
+            '/project/.env.build': 'OVERRIDDEN=second\n',
+          }),
+        );
+
+        expect(run.executor.environments.single, {
+          'FROM_FILE': 'file',
+          'OVERRIDDEN': 'second',
+          'FROM_KEY': 'key',
+          'BOTH': 'key',
+        });
+      });
+
+      test('a file does not replace a variable of the process', () async {
+        final run = await _run(
+          scripts,
+          ['plain', 'nested'],
+          fs: FakeFileSystem(files: {
+            '/project/.env': 'FROM_FILE=file\nHOME=/tmp\n',
+          }),
+          processEnvironment: {'HOME': '/home/me', 'FROM_KEY': 'process'},
+        );
+
+        expect(run.executor.environments.single, {
+          'FROM_FILE': 'file',
+          'FROM_KEY': 'key',
+          'BOTH': 'key',
+        });
+      });
+
+      test('fails when a file does not exist', () async {
+        await expectLater(
+          _run(scripts, ['plain', 'nested']),
+          throwsA(isA<RpsConfigException>().having(
+            (e) => e.message,
+            'message',
+            equals('The env file ".env" does not exist.'),
+          )),
+        );
+      });
+
+      test('passes no environment without the keys', () async {
+        final run = await _run('scripts:\n  a: echo a\n', ['a']);
+
+        expect(run.executor.environments, equals([null]));
+      });
+
+      test('does not read files or print values in a dry run', () async {
+        final run = await _run(scripts, ['build'], dryRun: true);
+
+        expect(run.output, isNot(contains('key')));
+      });
     });
 
     group(r'$cwd', () {

@@ -12,8 +12,21 @@ sealed class ScriptNode {
   /// Working directory of the commands under this node, if set.
   final String? cwd;
 
+  /// Environment variables of the commands under this node.
+  final Map<String, String> env;
+
+  /// Env files of the commands under this node.
+  final List<String> envFiles;
+
   /// Creates a [ScriptNode].
-  const ScriptNode({this.before, this.after, this.error, this.cwd});
+  const ScriptNode({
+    this.before,
+    this.after,
+    this.error,
+    this.cwd,
+    this.env = const {},
+    this.envFiles = const [],
+  });
 }
 
 /// A group of scripts.
@@ -28,6 +41,8 @@ class ScriptGroup extends ScriptNode {
     super.after,
     super.error,
     super.cwd,
+    super.env,
+    super.envFiles,
   });
 }
 
@@ -47,5 +62,7 @@ class Script extends ScriptNode {
     super.before,
     super.after,
     super.cwd,
+    super.env,
+    super.envFiles,
   });
 }

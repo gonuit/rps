@@ -163,6 +163,58 @@ bad:
       );
     });
 
+    test(r'reads $env and $envFile', () {
+      final root = _analyze(r'''
+$envFile: .env
+$env:
+  APP_ENV: dev
+  PORT: 8080
+  DEBUG: true
+build:
+  $envFile: [.env.build, .env.local]
+  $env: {APP_ENV: prod}
+  $script: echo build
+''') as ScriptGroup;
+      final build = root.children['build']!;
+
+      expect(root.env, {'APP_ENV': 'dev', 'PORT': '8080', 'DEBUG': 'true'});
+      expect(root.envFiles, equals(['.env']));
+      expect(build.env, {'APP_ENV': 'prod'});
+      expect(build.envFiles, equals(['.env.build', '.env.local']));
+      expect(build.error, isNull);
+    });
+
+    test(r'reports invalid $env and $envFile', () {
+      final root = _analyze(r'''
+a:
+  $env: text
+  $script: echo a
+b:
+  $env: {LIST: [1], NOTHING: , 'A=B': x, OK: fine}
+  $script: echo b
+c:
+  $envFile: {x: y}
+  $script: echo c
+''') as ScriptGroup;
+
+      expect(root.children['a']!.error, r'The "$env" key must be a map.');
+      expect(
+        root.children['b']!.error,
+        equals(
+          'The environment variable "LIST" must be '
+          'a string, a number or a boolean.\n'
+          'The environment variable "NOTHING" must be '
+          'a string, a number or a boolean.\n'
+          'Invalid environment variable name: "A=B".',
+        ),
+      );
+      expect(root.children['b']!.env, {'OK': 'fine'});
+      expect(
+        root.children['c']!.error,
+        r'The "$envFile" key must be a path or a list of paths.',
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

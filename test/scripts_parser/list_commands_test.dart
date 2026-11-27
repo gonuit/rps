@@ -339,6 +339,40 @@ scripts:
       );
     });
 
+    test(r'commands merge $env and $envFile from their groups', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  $envFile: .env
+  $env: {A: root, B: root}
+  plain: echo plain
+  app:
+    $envFile: .env.app
+    $env: {B: app, C: app}
+    $after: echo after
+    build:
+      $env: {C: build}
+      $script: echo build
+    ref: rps plain
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<CommandExecuted> commands(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .toList();
+
+      final [build, after] = commands(['app', 'build']);
+      expect(build.environment, {'A': 'root', 'B': 'app', 'C': 'build'});
+      expect(build.envFiles, equals(['.env', '.env.app']));
+      expect(after.environment, {'A': 'root', 'B': 'app', 'C': 'app'});
+
+      final [plain, _] = commands(['app', 'ref']);
+      expect(plain.environment, {'A': 'root', 'B': 'root'});
+      expect(plain.envFiles, equals(['.env']));
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''

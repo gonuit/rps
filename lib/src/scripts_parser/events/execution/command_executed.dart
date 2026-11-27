@@ -63,6 +63,12 @@ class CommandExecuted extends ExecutionEvent {
   /// Directory the command runs in, relative to the project, if set.
   final String? workingDirectory;
 
+  /// Environment variables set for the command.
+  final Map<String, String> environment;
+
+  /// Env files loaded for the command, later files win.
+  final List<String> envFiles;
+
   /// Returns a combined error message, or null if there are no errors.
   String? get errorMessage {
     final message = errors.whereType<String>().join('\n');
@@ -80,6 +86,8 @@ class CommandExecuted extends ExecutionEvent {
     required this.isHook,
     required this.commandArguments,
     required this.workingDirectory,
+    required this.environment,
+    required this.envFiles,
   });
 
   /// Creates a [CommandExecuted], parsing positional arguments from [command].
@@ -91,6 +99,8 @@ class CommandExecuted extends ExecutionEvent {
     bool isHook = false,
     List<String>? errors,
     String? workingDirectory,
+    Map<String, String> environment = const {},
+    List<String> envFiles = const [],
   }) {
     final errorsList = errors != null ? List<String>.of(errors) : <String>[];
     List<PositionalArgument>? scriptArguments;
@@ -110,6 +120,8 @@ class CommandExecuted extends ExecutionEvent {
       description: description,
       isHook: isHook,
       workingDirectory: workingDirectory,
+      environment: environment,
+      envFiles: envFiles,
     );
   }
 
