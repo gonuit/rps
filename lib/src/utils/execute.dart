@@ -99,9 +99,7 @@ Future<int> execute(
   final subscriptions = [
     io.ProcessSignal.sigint.watch().listen((_) {}),
     if (!io.Platform.isWindows)
-      io.ProcessSignal.sigterm
-          .watch()
-          .listen((_) => process.kill(io.ProcessSignal.sigterm)),
+      io.ProcessSignal.sigterm.watch().listen((_) => _stop(process)),
   ];
   try {
     final exitCode = await process.exitCode;
