@@ -190,7 +190,8 @@ scripts:
         );
 
         expect(
-          run.executor.workingDirectories,
+          run.executor.workingDirectories
+              .map((directory) => directory?.replaceAll(r'\', '/')),
           equals(['/project/packages/app']),
         );
         expect(run.output, contains('> app build (packages/app)\n'));
