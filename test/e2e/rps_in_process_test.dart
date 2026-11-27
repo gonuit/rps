@@ -39,7 +39,6 @@ class _NoOpExecutor extends Executor {
       : super(
           interpreter: null,
           platform: const FakePlatform(),
-          fs: const SystemFileSystem(),
         );
 
   @override

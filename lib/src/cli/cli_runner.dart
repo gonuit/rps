@@ -61,7 +61,6 @@ Future<int> runCli(
     executor ??= Executor(
       interpreter: config.getInterpreter(platform),
       platform: platform,
-      fs: fs,
     );
 
     final help = HelpOption(console: out, package: package);
@@ -90,7 +89,7 @@ Future<int> runCli(
       options: [
         help,
         const VersionOption(),
-        UpgradeOption(platform: platform, fs: fs),
+        UpgradeOption(platform: platform),
       ],
       fallback: environment.isCI ? null : help,
     );

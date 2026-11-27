@@ -2,7 +2,6 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:test/test.dart';
 
-import '../mocks/fake_file_system.dart';
 import '../mocks/fake_platform.dart';
 import '../mocks/script_source.mock.dart';
 import '../mocks/stream_sink_controller.dart';
@@ -52,7 +51,6 @@ class FakeExecutor extends Executor {
       : super(
           interpreter: null,
           platform: const FakePlatform(),
-          fs: FakeFileSystem(),
         );
 
   final int exitCode;

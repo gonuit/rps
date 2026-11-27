@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -17,10 +18,19 @@ Future<RpsResult> _runProcess(List<String> args, {bool ci = false}) async {
   );
 }
 
-Future<ProcessResult> _runIn(String yaml, List<String> args) async {
+String _forwardSlashes(String path) => path.replaceAll(r'\', '/');
+
+Future<ProcessResult> _runIn(
+  String yaml,
+  List<String> args, {
+  String? rpsYaml,
+}) async {
   final directory = Directory.systemTemp.createTempSync('rps_e2e_');
   try {
     File('${directory.path}/pubspec.yaml').writeAsStringSync(yaml);
+    if (rpsYaml != null) {
+      File('${directory.path}/rps.yaml').writeAsStringSync(rpsYaml);
+    }
     return await Process.run(
       Platform.resolvedExecutable,
       ['${Directory.current.path}/bin/rps.dart', ...args],
@@ -81,6 +91,106 @@ void main() {
         expect(hooked.exitCode, equals(3));
         expect(hooked.stdout, isNot(contains('never\n')));
       });
+    });
+
+    group('script process', () {
+      const arguments = [
+        'plain',
+        'two words',
+        "it's",
+        'say "hi"',
+        '',
+        'a&b',
+        r'$HOME',
+        '*',
+        'semi;colon',
+      ];
+      final printArgs = '${_forwardSlashes(Platform.resolvedExecutable)} '
+          '${_forwardSlashes(Directory.current.path)}'
+          '/test/fixtures/print_args.dart';
+
+      test('passes arguments to the script literally', () async {
+        final result = await _runIn(
+          'name: app\nscripts:\n  args: $printArgs\n',
+          ['args', ...arguments],
+        );
+
+        expect(result.exitCode, equals(0), reason: '${result.stderr}');
+        expect(
+          jsonDecode((result.stdout as String).trim().split('\n').last),
+          equals(arguments),
+        );
+      });
+
+      test(
+        'passes arguments literally with the cmd interpreter',
+        () async {
+          final result = await _runIn(
+            'name: app\n',
+            ['args', ...arguments],
+            rpsYaml: 'windows:\n  interpreter: cmd\n'
+                'scripts:\n  args: $printArgs\n',
+          );
+
+          expect(result.exitCode, equals(0), reason: '${result.stderr}');
+          expect(
+            jsonDecode((result.stdout as String).trim().split('\n').last),
+            equals(arguments),
+          );
+        },
+        testOn: 'windows',
+      );
+
+      test(
+        'the cmd interpreter passes the exit code through',
+        () async {
+          final result = await _runIn(
+            'name: app\n',
+            ['fail'],
+            rpsYaml: 'windows:\n  interpreter: cmd\n'
+                'scripts:\n  fail: exit 7\n',
+          );
+
+          expect(result.exitCode, equals(7));
+        },
+        testOn: 'windows',
+      );
+
+      test(
+        'the script reads piped stdin',
+        () async {
+          final directory = Directory.systemTemp.createTempSync('rps_e2e_');
+          addTearDown(() => directory.deleteSync(recursive: true));
+          File('${directory.path}/pubspec.yaml')
+              .writeAsStringSync('name: app\nscripts:\n  cat: cat\n');
+          final process = await Process.start(
+            Platform.resolvedExecutable,
+            ['${Directory.current.path}/bin/rps.dart', 'cat'],
+            workingDirectory: directory.path,
+            environment: {'CI': 'true'},
+          );
+          process.stdin.writeln('piped-data');
+          await process.stdin.close();
+          final output = await process.stdout.transform(utf8.decoder).join();
+
+          expect(await process.exitCode, equals(0));
+          expect(output.trim().split('\n').last, equals('piped-data'));
+        },
+        testOn: '!windows',
+      );
+
+      test(
+        'a script killed by a signal exits with 128 plus the signal',
+        () async {
+          final result = await _runIn(
+            'name: app\nscripts:\n  die: kill -TERM \$\$\n',
+            ['die'],
+          );
+
+          expect(result.exitCode, equals(143));
+        },
+        testOn: '!windows',
+      );
     });
 
     test('output has no colors without a terminal', () async {

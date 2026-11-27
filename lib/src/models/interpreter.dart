@@ -1,7 +1,6 @@
 /// Specifies the interpreter that will be used to execute the command.
 abstract interface class Interpreter {
-  /// The value/name of the interpreter that corresponds
-  /// to the value expected by the native library.
+  /// The name of the interpreter executable.
   String get value;
 }
 
