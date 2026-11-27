@@ -20,19 +20,16 @@ class RunCommand {
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
-    if (arguments.firstOrNull != 'run') {
-      return parser.getCommandsToExecute(arguments);
-    }
-    try {
-      // Remove command name (run) from arguments list
-      return parser.getCommandsToExecute(arguments.skip(1).toList());
-    } on RpsException {
-      try {
-        return parser.getCommandsToExecute(arguments);
-      } on RpsException catch (_) {}
-      rethrow;
-    }
+  List<String> _withoutCommandName(
+    ScriptsParser parser,
+    List<String> arguments,
+  ) {
+    if (arguments.firstOrNull != 'run') return arguments;
+    final rest = arguments.skip(1).toList();
+    final isNestedUnderRun = rest.isNotEmpty &&
+        !parser.contains([rest.first]) &&
+        parser.contains(['run', rest.first]);
+    return isNestedUnderRun ? arguments : rest;
   }
 
   /// Runs the script that [arguments] point to, with its hooks.
@@ -40,7 +37,9 @@ class RunCommand {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
 
-    final events = _resolve(parser, arguments);
+    final events = parser.getCommandsToExecute(
+      _withoutCommandName(parser, arguments),
+    );
 
     if (events.isEmpty) {
       throw RpsUsageException(

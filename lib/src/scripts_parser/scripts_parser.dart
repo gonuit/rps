@@ -103,6 +103,15 @@ class ScriptsParser {
     }
   }
 
+  /// Whether a script or a group exists under the given [keys].
+  bool contains(List<String> keys) {
+    ScriptNode? node = _analyze();
+    for (final key in keys) {
+      node = node is ScriptGroup ? node.children[key] : null;
+    }
+    return node != null;
+  }
+
   /// Resolves [arguments] into an ordered list of execution events.
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments) {
     final root = _analyze();
