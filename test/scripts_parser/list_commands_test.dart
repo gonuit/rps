@@ -457,6 +457,114 @@ scripts:
       });
     });
 
+    group(r'$args', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  build:
+    $args:
+      flavor: dev
+      target:
+    $script: flutter build ${target} --flavor ${ flavor } ${HOME} ${0}
+  short: rps build --target apk
+  release:
+    $args:
+      flavor:
+    $steps:
+      - echo releasing ${flavor}
+      - rps build --target ipa --flavor ${flavor} x
+  plain: echo
+'''),
+        platform: const FakePlatform(),
+      );
+
+      String compile(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .map((e) => e.compile())
+          .join(' && ');
+
+      test('fills declared names and leaves the rest to the shell', () {
+        expect(
+          compile(['build', '--target', 'apk', 'x']),
+          equals(r'flutter build apk --flavor dev ${HOME} x'),
+        );
+      });
+
+      test('accepts both forms, in any position, last one wins', () {
+        expect(
+          compile([
+            'build',
+            'x',
+            '--flavor=prod',
+            '--release',
+            '--target',
+            'apk',
+            '--target=ipa',
+          ]),
+          equals(r'flutter build ipa --flavor prod ${HOME} x --release'),
+        );
+      });
+
+      test('quotes values for the shell', () {
+        expect(
+          compile(['build', '--target', 'a b; rm', '--flavor=', 'x']),
+          equals(r"flutter build 'a b; rm' --flavor '' ${HOME} x"),
+        );
+      });
+
+      test('stops reading names after --', () {
+        expect(
+          compile(['build', '--target', 'apk', 'x', '--', '--flavor', 'p']),
+          equals(r'flutter build apk --flavor dev ${HOME} x --flavor p'),
+        );
+      });
+
+      test('reports missing arguments and values', () {
+        expect(
+          () => compile(['build', 'x']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            'The script "build" requires the argument(s): --target.',
+          )),
+        );
+        expect(
+          () => compile(['build', 'x', '--target']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            'The argument "--target" of the script "build" needs a value.',
+          )),
+        );
+      });
+
+      test('works through references and in steps', () {
+        expect(
+          compile(['short', 'x', '--flavor', 'qa']),
+          equals(r'flutter build apk --flavor qa ${HOME} x'),
+        );
+        expect(
+          compile(['release', '--flavor', 'prod']),
+          equals(
+            'echo releasing prod && '
+            r'flutter build ipa --flavor prod ${HOME} x',
+          ),
+        );
+      });
+
+      test('scripts without the key keep every argument', () {
+        expect(compile(['plain', '--flavor', 'x', '--']), 'echo --flavor x --');
+      });
+
+      test('lists the declared arguments', () {
+        expect(
+          parser.listCommands().first.declaredArguments.map((a) => a.name),
+          equals(['flavor', 'target']),
+        );
+      });
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''

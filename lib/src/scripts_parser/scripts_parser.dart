@@ -22,6 +22,9 @@ abstract class ScriptsParser {
   /// Key for the entry with commands run one after another.
   static const stepsKey = r'$steps';
 
+  /// Key for the named arguments entry.
+  static const argsKey = r'$args';
+
   /// Key for the working directory entry.
   static const cwdKey = r'$cwd';
 
@@ -39,6 +42,7 @@ abstract class ScriptsParser {
         descriptionKey ||
         defaultScriptKey ||
         stepsKey ||
+        argsKey ||
         cwdKey ||
         envKey ||
         envFileKey =>
@@ -114,6 +118,7 @@ class _ScriptParser implements ScriptsParser {
           context: context,
           description: node.description,
           errors: errors,
+          declaredArguments: node.args,
           workingDirectory: scope.cwd,
           environment: scope.env,
           envFiles: scope.envFiles,
@@ -176,24 +181,27 @@ class _ScriptParser implements ScriptsParser {
     switch (node) {
       case Script():
         final entered = _enter(stack, context.basePath.join(' '));
+        final (named, positional) = _named(node, context, arguments);
         final steps = node.steps;
         if (steps == null) {
           yield* _command(
             root,
             context: context,
             command: node.command,
-            arguments: arguments,
+            arguments: positional,
+            named: named,
             stack: entered,
             scope: scope,
           );
         } else {
-          _checkArguments(node, context, arguments);
+          _checkArguments(node, context, positional);
           for (final (index, step) in steps.indexed) {
             yield* _command(
               root,
               context: context,
               command: step,
-              arguments: arguments,
+              arguments: positional,
+              named: named,
               stack: entered,
               scope: scope,
               step: (index + 1, steps.length),
@@ -263,11 +271,68 @@ class _ScriptParser implements ScriptsParser {
     );
   }
 
-  static final _placeholder = RegExp(r'\$\{\s*([0-9]+)\s*\}');
+  (Map<String, String>, List<String>) _named(
+    Script script,
+    Context context,
+    List<String> arguments,
+  ) {
+    if (script.args.isEmpty) return (const {}, arguments);
 
-  String _fill(String word, Context context, List<String> arguments) {
+    final path = context.basePath.join(' ');
+    final values = {
+      for (final argument in script.args)
+        if (argument.defaultValue != null)
+          argument.name: argument.defaultValue!,
+    };
+    final names = script.args.map((argument) => argument.name).toSet();
+    final rest = <String>[];
+    for (var i = 0; i < arguments.length; i++) {
+      final argument = arguments[i];
+      if (argument == '--') {
+        rest.addAll(arguments.skip(i + 1));
+        break;
+      }
+      final separator = argument.indexOf('=');
+      final name = !argument.startsWith('--')
+          ? null
+          : argument.substring(2, separator < 0 ? null : separator);
+      if (!names.contains(name)) {
+        rest.add(argument);
+      } else if (separator >= 0) {
+        values[name!] = argument.substring(separator + 1);
+      } else if (i + 1 < arguments.length) {
+        values[name!] = arguments[++i];
+      } else {
+        throw RpsUsageException(
+          'The argument "--$name" of the script "$path" needs a value.',
+        );
+      }
+    }
+
+    final missing = names.where((name) => !values.containsKey(name));
+    if (missing.isNotEmpty) {
+      throw RpsUsageException(
+        'The script "$path" requires the argument(s): '
+        '${missing.map((name) => '--$name').join(', ')}.',
+      );
+    }
+    return (values, rest);
+  }
+
+  static final _placeholder =
+      RegExp(r'\$\{\s*([0-9]+|[A-Za-z_][A-Za-z0-9_-]*)\s*\}');
+
+  String _fill(
+    String word,
+    Context context,
+    List<String> arguments,
+    Map<String, String> named, {
+    required bool positional,
+  }) {
     return word.replaceAllMapped(_placeholder, (match) {
-      final index = int.parse(match[1]!);
+      final index = int.tryParse(match[1]!);
+      if (index == null) return named[match[1]!] ?? match[0]!;
+      if (!positional) return match[0]!;
       if (index >= arguments.length) {
         throw RpsUsageException(
           'The script "${context.basePath.join(' ')}" defines a positional '
@@ -295,6 +360,7 @@ class _ScriptParser implements ScriptsParser {
     required List<String> stack,
     required _Scope scope,
     List<String>? arguments,
+    Map<String, String> named = const {},
     bool isHook = false,
     (int, int)? step,
   }) sync* {
@@ -303,6 +369,7 @@ class _ScriptParser implements ScriptsParser {
         command: command,
         context: context,
         arguments: arguments,
+        named: named,
         isHook: isHook,
         step: step,
         workingDirectory: scope.cwd,
@@ -320,19 +387,23 @@ class _ScriptParser implements ScriptsParser {
       isHook: isHook,
       step: step,
     );
-    final words = referencedCommand.split(RegExp(r'\s+'));
+    final words = [
+      for (final word in referencedCommand.split(RegExp(r'\s+')))
+        _fill(
+          word,
+          context,
+          arguments ?? const [],
+          named,
+          positional: step != null,
+        ),
+    ];
 
     // Ref should start from root.
     yield* _resolve(
       root,
       root,
       Context(key: null, parent: context, isBase: true, current: root),
-      step == null
-          ? [...words, ...?arguments]
-          : [
-              for (final word in words)
-                _fill(word, context, arguments ?? const []),
-            ],
+      step == null ? [...words, ...?arguments] : words,
       stack,
       const _Scope(),
     );

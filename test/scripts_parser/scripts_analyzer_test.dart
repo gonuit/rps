@@ -267,6 +267,59 @@ number:
       );
     });
 
+    test(r'reads $args', () {
+      final root = _analyze(r'''
+build:
+  $args:
+    flavor: dev
+    target:
+    build-number: 7
+    obfuscate: false
+  $script: flutter build ${target} --flavor ${flavor}
+''') as ScriptGroup;
+      final build = root.children['build'] as Script;
+
+      expect(
+        build.args.map((a) => (a.name, a.defaultValue, a.isRequired)),
+        equals([
+          ('flavor', 'dev', false),
+          ('target', null, true),
+          ('build-number', '7', false),
+          ('obfuscate', 'false', false),
+        ]),
+      );
+      expect(build.error, isNull);
+    });
+
+    test(r'reports invalid $args', () {
+      final root = _analyze(r'''
+list:
+  $args: [a]
+  $script: echo
+names:
+  $args: {'0': x, 'a b': y, ok: [1]}
+  $script: echo
+group:
+  $args: {a: b}
+  child: echo
+''') as ScriptGroup;
+
+      expect(root.children['list']!.error, r'The "$args" key must be a map.');
+      expect(
+        root.children['names']!.error,
+        equals(
+          'Invalid argument name: "0".\n'
+          'Invalid argument name: "a b".\n'
+          'The default value of the argument "ok" must be '
+          'a string, a number or a boolean.',
+        ),
+      );
+      expect(
+        root.children['group']!.error,
+        r'The "$args" key can be used only in a script.',
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

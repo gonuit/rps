@@ -234,6 +234,28 @@ void main() {
         );
       });
 
+      test('named arguments are filled and quoted', () async {
+        final yaml = 'name: app\nscripts:\n'
+            '  args:\n'
+            '    \$args:\n'
+            '      name:\n'
+            '      greeting: hello\n'
+            '    \$script: $printArgs \${greeting} \${name}\n';
+        final result = await _runIn(
+          yaml,
+          ['args', '--name', "it's a b", 'tail', '--', '--name'],
+        );
+        final missing = await _runIn(yaml, ['args']);
+
+        expect(result.exitCode, equals(0), reason: '${result.stderr}');
+        expect(
+          jsonDecode((result.stdout as String).trim().split('\n').last),
+          equals(['hello', "it's a b", 'tail', '--name']),
+        );
+        expect(missing.exitCode, equals(64));
+        expect(missing.stderr, contains('requires the argument(s): --name.'));
+      });
+
       test(
         'the script reads piped stdin',
         () async {

@@ -47,6 +47,11 @@ class ScriptsAnalyzer {
     final hasScript = value.containsKey(ScriptsParser.scriptKey);
     final hasSteps = value.containsKey(ScriptsParser.stepsKey);
     if (!hasScript && !hasSteps) {
+      if (value.containsKey(ScriptsParser.argsKey)) {
+        errors.add(
+          'The "${ScriptsParser.argsKey}" key can be used only in a script.',
+        );
+      }
       return ScriptGroup(
         before: before,
         after: after,
@@ -81,6 +86,7 @@ class ScriptsAnalyzer {
     return Script(
       command: command,
       steps: steps,
+      args: _args(value[ScriptsParser.argsKey], errors),
       description: _string(value[ScriptsParser.descriptionKey]),
       before: before,
       after: after,
@@ -122,6 +128,32 @@ class ScriptsAnalyzer {
       return const [];
     }
     return [for (final command in commands) _command(command, path, errors)];
+  }
+
+  static final _argumentName = RegExp(r'^[A-Za-z_][A-Za-z0-9_-]*$');
+
+  List<ScriptArgument> _args(dynamic args, List<String> errors) {
+    if (args == null) return const [];
+    if (args is! Map) {
+      errors.add('The "${ScriptsParser.argsKey}" key must be a map.');
+      return const [];
+    }
+    final arguments = <ScriptArgument>[];
+    for (final MapEntry(key: name, :value) in args.entries) {
+      if (name is! String || !_argumentName.hasMatch(name)) {
+        errors.add('Invalid argument name: "$name".');
+      } else if (value == null) {
+        arguments.add(ScriptArgument(name));
+      } else if (value is String || value is num || value is bool) {
+        arguments.add(ScriptArgument(name, defaultValue: '$value'));
+      } else {
+        errors.add(
+          'The default value of the argument "$name" must be '
+          'a string, a number or a boolean.',
+        );
+      }
+    }
+    return arguments;
   }
 
   String? _cwd(Map<dynamic, dynamic> value, List<String> errors) {

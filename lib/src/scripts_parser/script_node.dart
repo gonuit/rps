@@ -46,6 +46,21 @@ class ScriptGroup extends ScriptNode {
   });
 }
 
+/// A named argument declared by a script.
+class ScriptArgument {
+  /// Name used as `--name` on the command line and `${name}` in the command.
+  final String name;
+
+  /// Value used when the argument is not given, `null` when it is required.
+  final String? defaultValue;
+
+  /// Creates a [ScriptArgument].
+  const ScriptArgument(this.name, {this.defaultValue});
+
+  /// Whether the argument has to be given.
+  bool get isRequired => defaultValue == null;
+}
+
 /// A script that can be run.
 class Script extends ScriptNode {
   /// The command for the current platform.
@@ -59,11 +74,15 @@ class Script extends ScriptNode {
   /// Optional human-readable description.
   final String? description;
 
+  /// Named arguments the script accepts.
+  final List<ScriptArgument> args;
+
   /// Creates a [Script].
   const Script({
     required this.command,
     this.steps,
     this.description,
+    this.args = const [],
     super.error,
     super.before,
     super.after,

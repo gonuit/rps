@@ -48,6 +48,12 @@ class CommandExecuted extends ExecutionEvent {
   /// on the positional argument index.
   final List<PositionalArgument> commandArguments;
 
+  /// Values of the named arguments, by name.
+  final Map<String, String> named;
+
+  /// Named arguments declared by the script.
+  final List<ScriptArgument> declaredArguments;
+
   /// Whether this command is coming from hook.
   final bool isHook;
 
@@ -90,6 +96,8 @@ class CommandExecuted extends ExecutionEvent {
     required this.description,
     required this.isHook,
     required this.step,
+    required this.named,
+    required this.declaredArguments,
     required this.commandArguments,
     required this.workingDirectory,
     required this.environment,
@@ -102,6 +110,8 @@ class CommandExecuted extends ExecutionEvent {
     required Context context,
     List<String>? arguments,
     String? description,
+    Map<String, String> named = const {},
+    List<ScriptArgument> declaredArguments = const [],
     bool isHook = false,
     (int, int)? step,
     List<String>? errors,
@@ -127,6 +137,8 @@ class CommandExecuted extends ExecutionEvent {
       description: description,
       isHook: isHook,
       step: step,
+      named: named,
+      declaredArguments: declaredArguments,
       workingDirectory: workingDirectory,
       environment: environment,
       envFiles: envFiles,
@@ -180,6 +192,18 @@ class CommandExecuted extends ExecutionEvent {
     return arguments.map(shell.quote).join(' ');
   }
 
+  String _fill(Shell shell, [String Function(Match match)? positional]) {
+    final names = named.keys.map(RegExp.escape).join('|');
+    final pattern = named.isEmpty
+        ? _positionalArgumentsRegexp
+        : RegExp('\\\$\\{\\s*(?:[0-9]+|($names))\\s*\\}');
+    return command.replaceAllMapped(pattern, (match) {
+      final name = named.isEmpty ? null : match[1];
+      if (name != null) return shell.quote(named[name]!);
+      return positional == null ? match[0]! : positional(match);
+    });
+  }
+
   /// Compiles the command. Returns the command ready for execution.
   String compile({Shell shell = const PosixShell()}) {
     final errorMessage = this.errorMessage;
@@ -198,8 +222,8 @@ class CommandExecuted extends ExecutionEvent {
       }
 
       final usedArguments = <int>{};
-      final filledCommand = command.replaceAllMapped(
-        _positionalArgumentsRegexp,
+      final filledCommand = _fill(
+        shell,
         (match) {
           final content = match.group(0)!;
           final value = content.substring(2, content.length - 1).trim();
@@ -239,9 +263,9 @@ class CommandExecuted extends ExecutionEvent {
         _serializeArguments(arguments.sublist(lastUsed + 1), shell)
       ].nonNulls.join(' ');
     } else if (step != null) {
-      return command;
+      return _fill(shell);
     } else {
-      return [command, _serializeArguments(arguments, shell)]
+      return [_fill(shell), _serializeArguments(arguments, shell)]
           .nonNulls
           .join(' ');
     }

@@ -54,6 +54,16 @@ class ScriptSelectionCommand {
     }
     final parameters = selected.commandArguments;
     final arguments = List.filled(parameters.length, '');
+    final named = <String>[];
+    for (final argument in selected.declaredArguments) {
+      if (!argument.isRequired) continue;
+      final value = prompts.get(
+        'Provide argument --${argument.name}:',
+        chevron: false,
+        validate: (arg) => true,
+      );
+      named.addAll(['--${argument.name}', value]);
+    }
     if (parameters.isNotEmpty) {
       for (final (index, parameter) in parameters.indexed) {
         final argument = prompts.get(
@@ -66,7 +76,12 @@ class ScriptSelectionCommand {
       console.writeln();
     }
 
-    final runCommandArguments = ['run', ...selected.context.path, ...arguments];
+    final runCommandArguments = [
+      'run',
+      ...selected.context.path,
+      ...named,
+      ...arguments,
+    ];
 
     await RunCommand(
       executor: executor,
