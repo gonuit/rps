@@ -645,13 +645,7 @@ scripts:
 
         expect(
           events.map((e) => e.runtimeType.toString()),
-          equals([
-            'HookExecuted',
-            'CommandExecuted',
-            'ParallelExecuted',
-            'HookExecuted',
-            'CommandExecuted',
-          ]),
+          equals(['CommandExecuted', 'ParallelExecuted', 'CommandExecuted']),
         );
         expect(parallel.path, equals('verify'));
         expect(

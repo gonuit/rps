@@ -5,18 +5,8 @@ class Executor {
   /// The shell that runs the commands.
   final rps.Shell shell;
 
-  /// Whether to print verbose diagnostic output.
-  final bool verbose;
-
-  /// Optional sink for verbose output.
-  final StringSink? out;
-
   /// Creates an [Executor].
-  Executor({
-    required this.shell,
-    this.verbose = false,
-    this.out,
-  });
+  Executor({required this.shell});
 
   /// Executes the given shell [command] and returns the exit code.
   Future<int> execute(
@@ -31,8 +21,6 @@ class Executor {
       environment: environment,
       workingDirectory: workingDirectory,
       output: output,
-      verbose: verbose,
-      out: out,
     );
   }
 }

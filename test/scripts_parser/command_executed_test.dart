@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   group('CommandExecuted', () {
     test('compile returns command with appended arguments', () {
-      final ctx = Context.root({'echo': 'echo hello'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo hello',
         context: ctx.next('echo'),
@@ -14,7 +14,7 @@ void main() {
     });
 
     test('compile fills positional arguments', () {
-      final ctx = Context.root({r'greet': r'echo ${0} ${1}'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: r'echo ${0} ${1}',
         context: ctx.next('greet'),
@@ -24,9 +24,7 @@ void main() {
     });
 
     test('path joins context keys', () {
-      final root = Context.root({
-        'a': {'b': 'cmd'}
-      });
+      final root = Context.root();
       final cmd = CommandExecuted(
         command: 'cmd',
         context: root.next('a').next('b'),
@@ -35,7 +33,7 @@ void main() {
     });
 
     test('errorMessage returns null when no errors', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -44,7 +42,7 @@ void main() {
     });
 
     test('errorMessage returns joined errors', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -54,7 +52,7 @@ void main() {
     });
 
     test('compile throws on errors', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -64,7 +62,7 @@ void main() {
     });
 
     test('compile throws when positional arg used in hook', () {
-      final ctx = Context.root({r'x': r'echo ${0}'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: r'echo ${0}',
         context: ctx.next('x'),
@@ -75,7 +73,7 @@ void main() {
     });
 
     test('equality based on command and path', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final a = CommandExecuted(command: 'echo', context: ctx.next('x'));
       final b = CommandExecuted(command: 'echo', context: ctx.next('x'));
       expect(a, equals(b));
@@ -83,7 +81,7 @@ void main() {
     });
 
     test('description is stored', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -93,7 +91,7 @@ void main() {
     });
 
     test('isHook defaults to false', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(command: 'echo', context: ctx.next('x'));
       expect(cmd.isHook, isFalse);
     });
@@ -113,7 +111,7 @@ void main() {
     });
 
     test('compile quotes arguments with spaces', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -123,7 +121,7 @@ void main() {
     });
 
     test('compile passes quotes in arguments literally', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -133,7 +131,7 @@ void main() {
     });
 
     test('compile quotes shell metacharacters and keeps empty arguments', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -143,7 +141,7 @@ void main() {
     });
 
     test('compile quotes only arguments after positional ones', () {
-      final ctx = Context.root({'x': r'echo "${0}"'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: r'echo "${0}"',
         context: ctx.next('x'),
@@ -153,7 +151,7 @@ void main() {
     });
 
     test('compile uses the given shell syntax', () {
-      final ctx = Context.root({'x': 'echo'});
+      final ctx = Context.root();
       final cmd = CommandExecuted(
         command: 'echo',
         context: ctx.next('x'),
@@ -183,34 +181,14 @@ void main() {
 
   group('CommandReferenced', () {
     test('equality based on command, path, and label', () {
-      final ctx = Context.root({'x': 'rps echo'});
+      final ctx = Context.root();
       final a = CommandReferenced(
         command: 'echo',
         context: ctx.next('x'),
-        label: 'x',
       );
       final b = CommandReferenced(
         command: 'echo',
         context: ctx.next('x'),
-        label: 'x',
-      );
-      expect(a, equals(b));
-      expect(a.hashCode, equals(b.hashCode));
-    });
-  });
-
-  group('HookExecuted', () {
-    test('equality based on command, path, and name', () {
-      final ctx = Context.root({r'$before': 'echo hi'});
-      final a = HookExecuted(
-        command: 'echo hi',
-        context: ctx.next(r'$before'),
-        name: 'before',
-      );
-      final b = HookExecuted(
-        command: 'echo hi',
-        context: ctx.next(r'$before'),
-        name: 'before',
       );
       expect(a, equals(b));
       expect(a.hashCode, equals(b.hashCode));

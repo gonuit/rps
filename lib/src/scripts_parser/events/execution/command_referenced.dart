@@ -5,9 +5,6 @@ class CommandReferenced extends ExecutionEvent {
   @override
   final Context context;
 
-  /// The label/key that triggered this reference.
-  final String label;
-
   @override
   String get path => context.basePath.join(' ');
   @override
@@ -23,7 +20,6 @@ class CommandReferenced extends ExecutionEvent {
   CommandReferenced({
     required this.context,
     required this.command,
-    required this.label,
     this.isHook = false,
     this.step,
   });
@@ -32,10 +28,9 @@ class CommandReferenced extends ExecutionEvent {
   bool operator ==(Object other) {
     return other is CommandReferenced &&
         other.command == command &&
-        other.path == path &&
-        other.label == label;
+        other.path == path;
   }
 
   @override
-  int get hashCode => Object.hash(path, command, label, runtimeType);
+  int get hashCode => Object.hash(path, command, runtimeType);
 }

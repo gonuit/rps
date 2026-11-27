@@ -4,11 +4,6 @@ import 'dart:io' as io;
 
 import 'package:rps/rps.dart';
 
-/// Callback type for functions that execute a shell command.
-typedef ExecuteFunction = Future<int> Function(
-  String command,
-);
-
 /// Receives the output of a command that runs without a terminal.
 class CommandOutput {
   /// Called with every line the command writes to stdout.
@@ -60,13 +55,7 @@ Future<int> execute(
   Map<String, String>? environment,
   String? workingDirectory,
   CommandOutput? output,
-  bool verbose = false,
-  StringSink? out,
 }) async {
-  if (verbose) {
-    out?.writeln('Using interpreter: ${shell.executable}');
-  }
-
   final io.Process process;
   try {
     process = await io.Process.start(

@@ -102,12 +102,6 @@ void main() {
       expect(watch.elapsed, lessThan(const Duration(seconds: 30)));
     });
 
-    test('prints the interpreter in verbose mode', () async {
-      final out = StringBuffer();
-      await execute('exit 0', shell: shell, verbose: true, out: out);
-      expect(out.toString(), startsWith('Using interpreter: '));
-    });
-
     test('fails when the interpreter cannot be started', () {
       expect(
         () => execute(
