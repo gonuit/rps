@@ -7,6 +7,7 @@ import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/commands/script_selection.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/cli/global_flags.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/update_notifier.dart';
@@ -27,12 +28,19 @@ Future<int> runCli(
   required Clock clock,
   Executor? executor,
 }) async {
+  final flags = GlobalFlags.parse(args);
+  final color = !flags.noColor && !environment.noColor;
+  final out = console.withAnsi(color && environment.stdoutHasTerminal);
+  final errors = Console(
+    sink: errorSink,
+    ansi: color && environment.stderrHasTerminal,
+  );
   try {
     final package = await RpsPackage.load(fs: fs);
     if (!environment.isCI) {
       await UpdateNotifier.forPackage(
         package: package,
-        console: console,
+        console: out,
         clock: clock,
       ).notifyIfUpdateAvailable();
     }
@@ -56,10 +64,10 @@ Future<int> runCli(
       fs: fs,
     );
 
-    final help = HelpOption(console: console, package: package);
+    final help = HelpOption(console: out, package: package);
     final cli = Cli(
       package: package,
-      console: console,
+      console: out,
       commands: [
         if (!environment.isCI && environment.hasTerminal)
           ScriptSelectionCommand(
@@ -85,19 +93,19 @@ Future<int> runCli(
       fallback: environment.isCI ? null : help,
     );
 
-    await cli.run(args);
+    await cli.run(flags.arguments);
     return 0;
   } on RpsException catch (err) {
-    errorSink.writeln('${boldRed('Error!')} ${err.message}');
+    errors.writeln('${boldRed('Error!')} ${err.message}');
     return 1;
   } on ScriptParserException catch (err) {
-    errorSink.writeln('${boldRed('Error!')} ${err.message}');
+    errors.writeln('${boldRed('Error!')} ${err.message}');
     return 1;
   } on CliException catch (err) {
-    errorSink.writeln('${boldRed('Error!')} ${err.message}');
+    errors.writeln('${boldRed('Error!')} ${err.message}');
     return err.exitCode;
   } catch (err) {
-    errorSink.writeln('${boldRed('Error!')} $err');
+    errors.writeln('${boldRed('Error!')} $err');
     return 1;
   }
 }

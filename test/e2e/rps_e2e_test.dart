@@ -20,5 +20,15 @@ Future<RpsResult> _runProcess(List<String> args, {bool ci = false}) async {
 void main() {
   group('E2E (process)', () {
     sharedE2eTests(_runProcess);
+
+    test('output has no colors without a terminal', () async {
+      final listed = await _runProcess(['ls'], ci: true);
+      final failed = await _runProcess(['nonexistent'], ci: true);
+
+      expect(listed.stdout, contains('Commands'));
+      expect(listed.stdout, isNot(contains('\x1B')));
+      expect(failed.stderr, contains('Error!'));
+      expect(failed.stderr, isNot(contains('\x1B')));
+    });
   });
 }

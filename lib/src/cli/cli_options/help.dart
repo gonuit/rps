@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
+import 'package:rps/src/cli/global_flags.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
 /// The --help / -h option that prints usage information.
@@ -47,6 +48,9 @@ class HelpOption extends CliOption {
         } else {
           console.writeln('      --${option.name} - ${option.description}');
         }
+      }
+      for (final flag in GlobalFlags.descriptions.entries) {
+        console.writeln('      --${flag.key} - ${flag.value}');
       }
     }
 

@@ -20,6 +20,15 @@ class _CiEnvironment implements Environment {
 
   @override
   bool get hasTerminal => true;
+
+  @override
+  bool get stdoutHasTerminal => true;
+
+  @override
+  bool get stderrHasTerminal => true;
+
+  @override
+  bool get noColor => false;
 }
 
 class _NoOpExecutor extends Executor {

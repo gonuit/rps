@@ -242,6 +242,9 @@ macos:
 | `-h`, `--help`    | Print help.                                                                |
 | `--version`       | Print rps version.                                                         |
 | `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
+| `--no-color`      | Disable colored output. Goes before the script name.                       |
+
+Colors are also disabled when the output is not a terminal, when the `NO_COLOR` environment variable is set, or when `TERM` is `dumb`. The output of your scripts is never changed.
 
 ## 🔎 Overview example
 
