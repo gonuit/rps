@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 import '../mocks/fake_executor.dart';
 import '../mocks/fake_file_system.dart';
 import '../mocks/fake_platform.dart';
+import '../mocks/fake_prompt.dart';
 import '../mocks/script_source.mock.dart';
 
 class _ScriptedExecutor extends Executor {
@@ -52,7 +53,7 @@ Future<_Run> _run(
   Map<String, String> processEnvironment = const {},
   bool assumeYes = false,
   bool interactive = false,
-  Confirm? confirm,
+  Prompt? prompt,
 }) async {
   final executor = FakeExecutor(exitCode: exitCode, executions: []);
   final output = StringBuffer();
@@ -68,7 +69,7 @@ Future<_Run> _run(
     processEnvironment: processEnvironment,
     assumeYes: assumeYes,
     interactive: interactive,
-    confirm: confirm ?? (_) => fail('Unexpected question.'),
+    prompt: prompt ?? FakePrompt(),
   ).run(events);
   return _Run(executor, output.toString());
 }
@@ -279,34 +280,36 @@ scripts:
 ''';
 
       test('asks once, before anything runs', () async {
-        final questions = <String>[];
-        late final FakeExecutor executor;
-        final events = ScriptsParser(
-          source: MockedScriptSource(scripts),
-          platform: const FakePlatform(),
-        ).getCommandsToExecute(['all']);
-        executor = FakeExecutor(exitCode: 0, executions: []);
-        await ScriptRunner(
-          executor: executor,
-          console: Console(sink: StringBuffer()),
+        final prompt = FakePrompt(['yes']);
+        final run = await _run(
+          scripts,
+          ['all'],
           interactive: true,
-          confirm: (message) {
-            expect(executor.executions, isEmpty);
-            questions.add(message);
-            return true;
-          },
-        ).run(events);
+          prompt: prompt,
+        );
 
-        expect(questions, equals(['Drop the database?']));
+        expect(prompt.questions, equals(['Drop the database? (y/N)']));
         expect(
-          executor.executions,
+          run.executor.executions,
           equals(['echo first', 'echo reset', 'echo reset']),
+        );
+      });
+
+      test('treats an empty answer as no', () async {
+        await expectLater(
+          _run(scripts, ['reset'], interactive: true, prompt: FakePrompt([''])),
+          throwsA(isA<RpsException>()),
         );
       });
 
       test('runs nothing when the user declines', () async {
         await expectLater(
-          _run(scripts, ['all'], interactive: true, confirm: (_) => false),
+          _run(
+            scripts,
+            ['all'],
+            interactive: true,
+            prompt: FakePrompt(['n']),
+          ),
           throwsA(isA<RpsException>()
               .having((e) => e.message, 'message', 'Cancelled.')
               .having((e) => e.exitCode, 'exitCode', 1)),

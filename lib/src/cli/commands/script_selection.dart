@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
@@ -32,10 +31,7 @@ class ScriptSelectionCommand {
       throw RpsException('No scripts found.');
     }
 
-    final selected = selectCommand(console, commands);
-    if (selected == null) {
-      throw RpsException('Script not selected.');
-    }
+    final selected = selectCommand(console, runner.prompt, commands);
 
     console.writeln('${boldGreen('>')} ${selected.path}');
     console.writeln('${boldGreen(r'$')} ${bold(selected.summary)}\n');
@@ -48,20 +44,13 @@ class ScriptSelectionCommand {
     final named = <String>[];
     for (final argument in selected.declaredArguments) {
       if (!argument.isRequired) continue;
-      final value = prompts.get(
-        'Provide argument --${argument.name}:',
-        chevron: false,
-        validate: (arg) => true,
-      );
+      final value = runner.prompt.ask('Provide argument --${argument.name}:');
       named.addAll(['--${argument.name}', value]);
     }
     if (parameters.isNotEmpty) {
       for (final (index, parameter) in parameters.indexed) {
-        final argument = prompts.get(
-          'Provide argument ${parameter.name}:',
-          chevron: false,
-          validate: (arg) => true,
-        );
+        final argument =
+            runner.prompt.ask('Provide argument ${parameter.name}:');
         arguments[index] = argument;
       }
       console.writeln();
@@ -83,34 +72,30 @@ class ScriptSelectionCommand {
 }
 
 /// Prompts the user to select a command from the given [commands] list.
-ScriptInfo? selectCommand(
+ScriptInfo selectCommand(
   Console console,
+  Prompt prompt,
   List<ScriptInfo> commands,
 ) {
   console.writeln('\n${bold('Which scripts do you want to run?')}');
-  for (int i = 0; i < commands.length; i++) {
-    final command = commands[i];
+  for (final (index, command) in commands.indexed) {
     console
-      ..write('  ${green('${i + 1})')} ')
+      ..write('  ${green('${index + 1})')} ')
       ..write(bold(command.path))
       ..write(' ')
       ..writeln(gray('(${command.summary})'));
   }
 
-  final line = prompts.get(
+  int? parse(String answer) {
+    final index = int.tryParse(answer.trim());
+    return index != null && index >= 1 && index <= commands.length
+        ? index
+        : null;
+  }
+
+  final answer = prompt.ask(
     'Select script:',
-    chevron: false,
-    validate: (s) {
-      if (s.isEmpty) return false;
-      var index = int.tryParse(s);
-      if (index == null) return false;
-      return index >= 1 && index <= commands.length;
-    },
+    validate: (answer) => parse(answer) != null,
   );
-
-  final int? index = int.tryParse(line);
-
-  if (index == null || index > commands.length || index < 1) return null;
-
-  return commands[index - 1];
+  return commands[parse(answer)! - 1];
 }

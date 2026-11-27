@@ -89,7 +89,6 @@ dependencies:
   meta: ^1.10.0
   pub_semver: ^2.1.4
   collection: ^1.18.0
-  prompts: ^2.0.0
   http: ^1.2.2
 
 dev_dependencies:

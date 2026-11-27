@@ -3,23 +3,10 @@ import 'dart:io' as io;
 import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
-import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/env_file.dart';
 import 'package:rps/src/utils/file_system.dart';
-
-/// Asks the user a yes or no question.
-typedef Confirm = bool Function(String message);
-
-bool _ask(String message) {
-  final answer = prompts.get(
-    '$message (y/N)',
-    chevron: false,
-    validate: (answer) => true,
-  );
-  return answer.trim().toLowerCase().startsWith('y');
-}
 
 class _Cancelled implements Exception {
   const _Cancelled();
@@ -67,7 +54,9 @@ class ScriptRunner {
   /// Whether the user can be asked questions.
   final bool interactive;
 
-  final Confirm _confirm;
+  /// Asks the questions of scripts that need confirmation.
+  final Prompt prompt;
+
   final FileSystem _fs;
   final Map<String, String> _processEnvironment;
   final _envFiles = <String, Map<String, String>>{};
@@ -80,11 +69,11 @@ class ScriptRunner {
     this.dryRun = false,
     this.assumeYes = false,
     this.interactive = false,
-    Confirm confirm = _ask,
+    Prompt? prompt,
     FileSystem fs = const SystemFileSystem(),
     Map<String, String>? processEnvironment,
   })  : errors = errors ?? console,
-        _confirm = confirm,
+        prompt = prompt ?? TerminalPrompt(console),
         _fs = fs,
         _processEnvironment = processEnvironment ?? io.Platform.environment;
 
@@ -142,7 +131,10 @@ class ScriptRunner {
           hint: 'Run it with "rps --yes <script>" or set RPS_YES=1 to confirm.',
         );
       }
-      if (!_confirm(confirmation.message)) throw RpsException('Cancelled.');
+      final answer = prompt.ask('${confirmation.message} (y/N)');
+      if (!answer.trim().toLowerCase().startsWith('y')) {
+        throw RpsException('Cancelled.');
+      }
     }
     if (confirmations.isNotEmpty) console.writeln();
   }

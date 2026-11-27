@@ -64,6 +64,7 @@ Future<int> runCli(
       dryRun: arguments.dryRun,
       assumeYes: arguments.yes || environment.assumeYes,
       interactive: !environment.isCI && environment.hasTerminal,
+      prompt: TerminalPrompt(out),
       fs: fs,
     );
 
