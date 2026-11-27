@@ -17,7 +17,7 @@ executables:
   rps:
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
+  sdk: ^3.3.0
 
 scripts:
   # run is a default script. To use it, simply type
