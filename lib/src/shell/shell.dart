@@ -1,6 +1,5 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/utils/platform.dart';
 
 /// A command interpreter that runs scripts.
 sealed class Shell {

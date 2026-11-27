@@ -1,5 +1,4 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Turns the raw `scripts` value into a tree of [ScriptNode]s.
 class ScriptsAnalyzer {

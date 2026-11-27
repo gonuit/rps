@@ -1,6 +1,5 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/utils/platform.dart';
 import 'package:yaml/yaml.dart';
 
 /// Parsed data from the rps.yaml configuration file.

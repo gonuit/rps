@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Parses and resolves scripts from a [ScriptsSource].
 class ScriptsParser {

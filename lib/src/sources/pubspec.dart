@@ -1,6 +1,5 @@
 import 'package:path/path.dart' as p;
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/file_system.dart';
 import 'package:yaml/yaml.dart';
 
 /// A [ScriptsSource] that reads scripts from `pubspec.yaml`.

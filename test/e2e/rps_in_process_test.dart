@@ -1,8 +1,6 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli_runner.dart';
 import 'package:rps/src/update_check/clock.dart';
-import 'package:rps/src/utils/file_system.dart';
-import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
 
 import '../mocks/fake_environment.dart';

@@ -4,9 +4,7 @@ import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/env_file.dart';
-import 'package:rps/src/utils/file_system.dart';
 
 class _Cancelled implements Exception {
   const _Cancelled();

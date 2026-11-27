@@ -1,5 +1,4 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
 
 class FakeExecutor extends Executor {
   FakeExecutor({this.exitCode = 0, List<String>? executions})

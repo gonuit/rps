@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
 
 void main() {

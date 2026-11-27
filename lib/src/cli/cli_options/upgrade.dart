@@ -1,5 +1,4 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Updates rps to the latest version.
 Future<void> upgrade(Console console, Platform platform) async {

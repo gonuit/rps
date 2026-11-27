@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
 class RunCommand {

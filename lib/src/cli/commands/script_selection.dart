@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:rps/rps.dart';
-import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
 class ScriptSelectionCommand {

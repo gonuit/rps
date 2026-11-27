@@ -1,7 +1,6 @@
 import 'package:path/path.dart' as p;
 import 'package:rps/rps.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
-import 'package:rps/src/utils/file_system.dart';
 import 'package:yaml/yaml.dart';
 
 /// A script source implementation that loads scripts from the `rps.yaml` file.

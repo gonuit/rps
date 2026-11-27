@@ -5,13 +5,10 @@ import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/commands/script_selection.dart';
-import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
 import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/update_notifier.dart';
 import 'package:rps/src/utils/environment.dart';
-import 'package:rps/src/utils/file_system.dart';
-import 'package:rps/src/utils/platform.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
 /// Runs the rps CLI with the given [args] and dependencies.
