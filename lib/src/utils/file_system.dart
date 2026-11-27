@@ -21,6 +21,9 @@ abstract interface class FileSystem {
   /// Returns the paths of all files directly inside the directory at [path].
   List<String> listFilePaths(String path);
 
+  /// Returns the paths of all directories directly inside the one at [path].
+  List<String> listDirectoryPaths(String path);
+
   /// Resolves a `package:` URI to a directory path, or `null` if unresolvable.
   Future<String?> resolvePackagePath(String packageUri);
 }
@@ -53,6 +56,15 @@ class SystemFileSystem implements FileSystem {
         .listSync()
         .whereType<io.File>()
         .map((f) => f.path)
+        .toList();
+  }
+
+  @override
+  List<String> listDirectoryPaths(String path) {
+    return io.Directory(path)
+        .listSync()
+        .whereType<io.Directory>()
+        .map((directory) => directory.path)
         .toList();
   }
 

@@ -14,3 +14,4 @@ export 'src/sources/rps_yaml.dart';
 export 'src/utils/execute.dart';
 export 'src/utils/file_system.dart';
 export 'src/utils/platform.dart';
+export 'src/workspace/workspace.dart';

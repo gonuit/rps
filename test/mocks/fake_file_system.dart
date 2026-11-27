@@ -30,7 +30,19 @@ class FakeFileSystem implements FileSystem {
 
   @override
   bool directoryExists(String path) =>
-      directories.containsKey(_normalize(path));
+      directories.containsKey(_normalize(path)) ||
+      files.keys.any((file) => file.startsWith('${_normalize(path)}/'));
+
+  @override
+  List<String> listDirectoryPaths(String path) {
+    final prefix = '${_normalize(path)}/';
+    return {
+      for (final file in files.keys)
+        if (file.startsWith(prefix) &&
+            file.substring(prefix.length).contains('/'))
+          prefix + file.substring(prefix.length).split('/').first,
+    }.toList();
+  }
 
   @override
   String readFile(String path) {
