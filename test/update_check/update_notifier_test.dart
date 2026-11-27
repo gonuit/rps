@@ -9,6 +9,7 @@ import 'package:rps/src/update_check/clock.dart';
 import 'package:rps/src/update_check/pub_dev_api.dart';
 import 'package:rps/src/update_check/update_checker.dart';
 import 'package:rps/src/update_check/update_notifier.dart';
+import 'package:rps/src/utils/environment.dart';
 import 'package:test/test.dart';
 
 import '../mocks/fake_file_system.dart';
@@ -24,6 +25,28 @@ class _FailingWritesFileSystem extends FakeFileSystem {
   void writeFile(String path, String contents) {
     throw const FileSystemException('Read-only file system');
   }
+}
+
+class _Environment implements Environment {
+  @override
+  final bool isCI;
+  @override
+  final bool stdoutHasTerminal;
+  @override
+  final bool updateCheckDisabled;
+
+  const _Environment({
+    this.isCI = false,
+    this.stdoutHasTerminal = true,
+    this.updateCheckDisabled = false,
+  });
+
+  @override
+  bool get hasTerminal => true;
+  @override
+  bool get stderrHasTerminal => true;
+  @override
+  bool get noColor => false;
 }
 
 UpdateNotifier _notifier(
@@ -45,6 +68,30 @@ UpdateNotifier _notifier(
 }
 
 void main() {
+  group('shouldCheckForUpdates', () {
+    test('is true on a terminal outside CI', () {
+      expect(shouldCheckForUpdates(const _Environment()), isTrue);
+    });
+
+    test('is false in CI', () {
+      expect(shouldCheckForUpdates(const _Environment(isCI: true)), isFalse);
+    });
+
+    test('is false when stdout is not a terminal', () {
+      expect(
+        shouldCheckForUpdates(const _Environment(stdoutHasTerminal: false)),
+        isFalse,
+      );
+    });
+
+    test('is false when disabled with the variable', () {
+      expect(
+        shouldCheckForUpdates(const _Environment(updateCheckDisabled: true)),
+        isFalse,
+      );
+    });
+  });
+
   group('UpdateNotifier', () {
     test('shows a banner when a newer version is available', () async {
       final sink = StreamSinkController();

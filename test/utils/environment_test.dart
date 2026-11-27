@@ -19,6 +19,9 @@ class FakeEnvironment implements Environment {
 
   @override
   bool get noColor => false;
+
+  @override
+  bool get updateCheckDisabled => false;
 }
 
 void main() {

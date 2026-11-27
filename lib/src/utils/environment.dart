@@ -16,6 +16,9 @@ abstract interface class Environment {
 
   /// Whether colors are disabled with `NO_COLOR` or `TERM=dumb`.
   bool get noColor;
+
+  /// Whether the update check is disabled with `RPS_NO_UPDATE_CHECK`.
+  bool get updateCheckDisabled;
 }
 
 /// Default [Environment] backed by platform environment variables.
@@ -38,9 +41,13 @@ class SystemEnvironment implements Environment {
       Platform.environment['TERM'] == 'dumb';
 
   @override
+  bool get updateCheckDisabled =>
+      isCIValue(Platform.environment['RPS_NO_UPDATE_CHECK']);
+
+  @override
   bool get isCI => isCIValue(Platform.environment['CI']);
 
-  /// Whether [value] of the `CI` variable marks a CI environment.
+  /// Whether [value] of an on/off variable such as `CI` turns it on.
   static bool isCIValue(String? value) {
     final normalized = value?.trim().toLowerCase() ?? '';
     return normalized.isNotEmpty && normalized != 'false' && normalized != '0';

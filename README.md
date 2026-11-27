@@ -246,6 +246,8 @@ macos:
 
 Colors are also disabled when the output is not a terminal, when the `NO_COLOR` environment variable is set, or when `TERM` is `dumb`. The output of your scripts is never changed.
 
+rps checks for a new version once a day and shows a notice when one is available. The check runs only when the output is a terminal and not in CI. Set `RPS_NO_UPDATE_CHECK=1` to turn it off.
+
 ## 🔎 Overview example
 
 ```yaml

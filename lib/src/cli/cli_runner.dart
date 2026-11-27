@@ -37,7 +37,7 @@ Future<int> runCli(
   );
   try {
     final package = await RpsPackage.load(fs: fs);
-    if (!environment.isCI) {
+    if (shouldCheckForUpdates(environment)) {
       await UpdateNotifier.forPackage(
         package: package,
         console: out,

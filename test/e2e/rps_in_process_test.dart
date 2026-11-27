@@ -29,6 +29,9 @@ class _CiEnvironment implements Environment {
 
   @override
   bool get noColor => false;
+
+  @override
+  bool get updateCheckDisabled => false;
 }
 
 class _NoOpExecutor extends Executor {
