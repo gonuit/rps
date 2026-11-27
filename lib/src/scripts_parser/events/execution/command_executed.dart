@@ -54,6 +54,9 @@ class CommandExecuted extends ExecutionEvent {
   /// Named arguments declared by the script.
   final List<ScriptArgument> declaredArguments;
 
+  /// The question the script asks before it runs, if any.
+  final String? confirmation;
+
   /// Whether this command is coming from hook.
   final bool isHook;
 
@@ -98,6 +101,7 @@ class CommandExecuted extends ExecutionEvent {
     required this.step,
     required this.named,
     required this.declaredArguments,
+    required this.confirmation,
     required this.commandArguments,
     required this.workingDirectory,
     required this.environment,
@@ -112,6 +116,7 @@ class CommandExecuted extends ExecutionEvent {
     String? description,
     Map<String, String> named = const {},
     List<ScriptArgument> declaredArguments = const [],
+    String? confirmation,
     bool isHook = false,
     (int, int)? step,
     List<String>? errors,
@@ -139,6 +144,7 @@ class CommandExecuted extends ExecutionEvent {
       step: step,
       named: named,
       declaredArguments: declaredArguments,
+      confirmation: confirmation,
       workingDirectory: workingDirectory,
       environment: environment,
       envFiles: envFiles,

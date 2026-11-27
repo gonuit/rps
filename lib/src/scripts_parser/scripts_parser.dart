@@ -25,6 +25,9 @@ abstract class ScriptsParser {
   /// Key for the named arguments entry.
   static const argsKey = r'$args';
 
+  /// Key for the confirmation entry.
+  static const confirmKey = r'$confirm';
+
   /// Key for the working directory entry.
   static const cwdKey = r'$cwd';
 
@@ -43,6 +46,7 @@ abstract class ScriptsParser {
         defaultScriptKey ||
         stepsKey ||
         argsKey ||
+        confirmKey ||
         cwdKey ||
         envKey ||
         envFileKey =>
@@ -119,6 +123,7 @@ class _ScriptParser implements ScriptsParser {
           description: node.description,
           errors: errors,
           declaredArguments: node.args,
+          confirmation: _confirmation(node, context),
           workingDirectory: scope.cwd,
           environment: scope.env,
           envFiles: scope.envFiles,
@@ -167,6 +172,12 @@ class _ScriptParser implements ScriptsParser {
     final error = node.error;
     if (error != null) throw RpsConfigException(error);
     final scope = parentScope.enter(node);
+    if (node is Script && node.confirm) {
+      yield ConfirmationRequired(
+        context: context,
+        message: _confirmation(node, context)!,
+      );
+    }
 
     yield* _hook(
       root,
@@ -259,6 +270,12 @@ class _ScriptParser implements ScriptsParser {
       stack: _enter(stack, hookContext.basePath.join(' ')),
       scope: scope,
     );
+  }
+
+  String? _confirmation(Script script, Context context) {
+    if (!script.confirm) return null;
+    return script.confirmMessage ??
+        'Run the script "${context.basePath.join(' ')}"?';
   }
 
   void _checkArguments(Script script, Context context, List<String> arguments) {

@@ -1,10 +1,23 @@
 import 'dart:io' as io;
 
 import 'package:path/path.dart' as p;
+import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/env_file.dart';
 import 'package:rps/src/utils/file_system.dart';
+
+/// Asks the user a yes or no question.
+typedef Confirm = bool Function(String message);
+
+bool _ask(String message) {
+  final answer = prompts.get(
+    '$message (y/N)',
+    chevron: false,
+    validate: (answer) => true,
+  );
+  return answer.trim().toLowerCase().startsWith('y');
+}
 
 /// Prints and runs the commands of a resolved script.
 class ScriptRunner {
@@ -17,6 +30,13 @@ class ScriptRunner {
   /// Whether commands are printed instead of being run.
   final bool dryRun;
 
+  /// Whether scripts are confirmed without asking.
+  final bool assumeYes;
+
+  /// Whether the user can be asked questions.
+  final bool interactive;
+
+  final Confirm _confirm;
   final FileSystem _fs;
   final Map<String, String> _processEnvironment;
   final _envFiles = <String, Map<String, String>>{};
@@ -26,15 +46,24 @@ class ScriptRunner {
     required this.executor,
     required this.console,
     this.dryRun = false,
+    this.assumeYes = false,
+    this.interactive = false,
+    Confirm confirm = _ask,
     FileSystem fs = const SystemFileSystem(),
     Map<String, String>? processEnvironment,
-  })  : _fs = fs,
+  })  : _confirm = confirm,
+        _fs = fs,
         _processEnvironment = processEnvironment ?? io.Platform.environment;
 
   /// Runs [events] in order and stops at the first command that fails.
   Future<void> run(List<ExecutionEvent> events) async {
+    _confirmAll(events);
     for (final event in events) {
       switch (event) {
+        case ConfirmationRequired():
+          if (dryRun) {
+            console.writeln('${bold(yellow('?'))} ${event.message}\n');
+          }
         case CommandExecuted():
           await _execute(event);
         case CommandReferenced():
@@ -47,6 +76,22 @@ class ScriptRunner {
           console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
       }
     }
+  }
+
+  void _confirmAll(List<ExecutionEvent> events) {
+    if (dryRun || assumeYes) return;
+    final confirmations = events.whereType<ConfirmationRequired>().toSet();
+    for (final confirmation in confirmations) {
+      if (!interactive) {
+        throw RpsUsageException(
+          'The script "${confirmation.path}" asks for confirmation: '
+          '${confirmation.message}',
+          hint: 'Run it with "rps --yes <script>" or set RPS_YES=1 to confirm.',
+        );
+      }
+      if (!_confirm(confirmation.message)) throw RpsException('Cancelled.');
+    }
+    if (confirmations.isNotEmpty) console.writeln();
   }
 
   void _header(

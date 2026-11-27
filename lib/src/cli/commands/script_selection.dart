@@ -16,6 +16,9 @@ class ScriptSelectionCommand {
   /// Whether the selected script is printed instead of being run.
   final bool dryRun;
 
+  /// Whether scripts are confirmed without asking.
+  final bool assumeYes;
+
   final Platform _platform;
 
   final FileSystem _fs;
@@ -24,6 +27,7 @@ class ScriptSelectionCommand {
   ScriptSelectionCommand({
     required this.executor,
     this.dryRun = false,
+    this.assumeYes = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
     FileSystem fs = const SystemFileSystem(),
@@ -86,6 +90,8 @@ class ScriptSelectionCommand {
     await RunCommand(
       executor: executor,
       dryRun: dryRun,
+      assumeYes: assumeYes,
+      interactive: true,
       getScriptsSource: () => source,
       platform: _platform,
       fs: _fs,

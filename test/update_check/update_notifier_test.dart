@@ -47,6 +47,8 @@ class _Environment implements Environment {
   bool get stderrHasTerminal => true;
   @override
   bool get noColor => false;
+  @override
+  bool get assumeYes => false;
 }
 
 UpdateNotifier _notifier(

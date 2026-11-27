@@ -31,6 +31,8 @@ class _CiEnvironment implements Environment {
 
   @override
   bool get updateCheckDisabled => false;
+  @override
+  bool get assumeYes => false;
 }
 
 class _NoOpExecutor extends Executor {

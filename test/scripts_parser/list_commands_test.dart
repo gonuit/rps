@@ -565,6 +565,60 @@ scripts:
       });
     });
 
+    test(r'scripts with $confirm ask before they run', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  db:
+    reset:
+      $confirm: true
+      $before: echo before
+      $script: echo reset
+    drop:
+      $confirm: Drop everything?
+      $script: echo drop
+  all:
+    $steps:
+      - rps db reset
+      - rps db drop
+  safe: echo safe
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<String> questions(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<ConfirmationRequired>()
+          .map((e) => '${e.path}: ${e.message}')
+          .toList();
+
+      expect(
+        questions(['db', 'reset']),
+        equals(['db reset: Run the script "db reset"?']),
+      );
+      expect(
+        parser.getCommandsToExecute(['db', 'reset']).first,
+        isA<ConfirmationRequired>(),
+      );
+      expect(
+        questions(['all']),
+        equals([
+          'db reset: Run the script "db reset"?',
+          'db drop: Drop everything?',
+        ]),
+      );
+      expect(questions(['safe']), isEmpty);
+      expect(
+        parser.listCommands().map((e) => e.confirmation),
+        equals([
+          'Run the script "db reset"?',
+          'Drop everything?',
+          null,
+          null,
+        ]),
+      );
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''

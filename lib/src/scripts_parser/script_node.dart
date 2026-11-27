@@ -77,12 +77,20 @@ class Script extends ScriptNode {
   /// Named arguments the script accepts.
   final List<ScriptArgument> args;
 
+  /// Whether the script asks for confirmation before it runs.
+  final bool confirm;
+
+  /// The confirmation question, when the script sets its own.
+  final String? confirmMessage;
+
   /// Creates a [Script].
   const Script({
     required this.command,
     this.steps,
     this.description,
     this.args = const [],
+    this.confirm = false,
+    this.confirmMessage,
     super.error,
     super.before,
     super.after,

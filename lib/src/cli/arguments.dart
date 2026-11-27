@@ -29,6 +29,7 @@ class RpsArguments {
   static const _upgrade = 'upgrade';
   static const _dryRun = 'dry-run';
   static const _noColor = 'no-color';
+  static const _yes = 'yes';
   static const _json = 'json';
   static const _ls = 'ls';
   static const _run = 'run';
@@ -39,6 +40,12 @@ class RpsArguments {
       abbr: 'n',
       negatable: false,
       help: 'Prints the commands of a script without running them.',
+    )
+    ..addFlag(
+      _yes,
+      abbr: 'y',
+      negatable: false,
+      help: 'Confirms scripts that ask for confirmation.',
     )
     ..addFlag(
       _noColor,
@@ -78,6 +85,9 @@ class RpsArguments {
   /// Whether commands are printed instead of being run.
   final bool dryRun;
 
+  /// Whether scripts that ask for confirmation are confirmed.
+  final bool yes;
+
   /// Whether scripts are listed as JSON.
   final bool json;
 
@@ -89,6 +99,7 @@ class RpsArguments {
     required this.action,
     this.noColor = false,
     this.dryRun = false,
+    this.yes = false,
     this.json = false,
     this.script = const [],
   });
@@ -128,12 +139,14 @@ class RpsArguments {
 
     final noColor = flag(_noColor);
     final dryRun = flag(_dryRun);
+    final yes = flag(_yes);
 
     RpsArguments build(RpsAction action, {List<String> script = const []}) {
       return RpsArguments(
         action: action,
         noColor: noColor,
         dryRun: dryRun,
+        yes: yes,
         json: command?.name == _ls && command!.flag(_json),
         script: script,
       );

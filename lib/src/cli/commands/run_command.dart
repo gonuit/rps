@@ -17,6 +17,12 @@ class RunCommand {
   /// Whether commands are printed instead of being run.
   final bool dryRun;
 
+  /// Whether scripts are confirmed without asking.
+  final bool assumeYes;
+
+  /// Whether the user can be asked questions.
+  final bool interactive;
+
   final Platform _platform;
 
   final FileSystem _fs;
@@ -25,6 +31,8 @@ class RunCommand {
   RunCommand({
     required this.executor,
     this.dryRun = false,
+    this.assumeYes = false,
+    this.interactive = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
     FileSystem fs = const SystemFileSystem(),
@@ -64,6 +72,8 @@ class RunCommand {
       executor: executor,
       console: console,
       dryRun: dryRun,
+      assumeYes: assumeYes,
+      interactive: interactive,
       fs: _fs,
     ).run(events);
   }

@@ -19,6 +19,9 @@ abstract interface class Environment {
 
   /// Whether the update check is disabled with `RPS_NO_UPDATE_CHECK`.
   bool get updateCheckDisabled;
+
+  /// Whether scripts are confirmed without asking, with `RPS_YES`.
+  bool get assumeYes;
 }
 
 /// Default [Environment] backed by platform environment variables.
@@ -43,6 +46,9 @@ class SystemEnvironment implements Environment {
   @override
   bool get updateCheckDisabled =>
       isCIValue(Platform.environment['RPS_NO_UPDATE_CHECK']);
+
+  @override
+  bool get assumeYes => isCIValue(Platform.environment['RPS_YES']);
 
   @override
   bool get isCI => isCIValue(Platform.environment['CI']);

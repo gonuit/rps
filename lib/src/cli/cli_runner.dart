@@ -59,6 +59,8 @@ Future<int> runCli(
     final shell = Shell.of(config.getInterpreter(platform), platform);
     final runExecutor = executor ?? Executor(shell: shell);
 
+    final assumeYes = arguments.yes || environment.assumeYes;
+
     switch (arguments.action) {
       case RpsAction.help:
         printHelp(out, package);
@@ -76,6 +78,8 @@ Future<int> runCli(
           getScriptsSource: getScriptSource,
           executor: runExecutor,
           dryRun: arguments.dryRun,
+          assumeYes: assumeYes,
+          interactive: !environment.isCI && environment.hasTerminal,
           platform: platform,
           fs: fs,
         ).run(out, arguments.script);
@@ -87,6 +91,7 @@ Future<int> runCli(
             getScriptsSource: getScriptSource,
             executor: runExecutor,
             dryRun: arguments.dryRun,
+            assumeYes: assumeYes,
             platform: platform,
             fs: fs,
           ).run(out);

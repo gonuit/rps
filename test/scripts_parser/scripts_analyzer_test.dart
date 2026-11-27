@@ -320,6 +320,40 @@ group:
       );
     });
 
+    test(r'reads $confirm', () {
+      final root = _analyze(r'''
+a:
+  $confirm: true
+  $script: echo a
+b:
+  $confirm: Drop the database?
+  $steps: [echo b]
+c:
+  $confirm: false
+  $script: echo c
+d:
+  $confirm: 5
+  $script: echo d
+group:
+  $confirm: true
+  child: echo
+''') as ScriptGroup;
+      Script script(String key) => root.children[key] as Script;
+
+      expect((script('a').confirm, script('a').confirmMessage), (true, null));
+      expect(script('b').confirmMessage, equals('Drop the database?'));
+      expect(script('b').confirm, isTrue);
+      expect(script('c').confirm, isFalse);
+      expect(
+        script('d').error,
+        r'The "$confirm" key must be "true" or a question.',
+      );
+      expect(
+        root.children['group']!.error,
+        r'The "$confirm" key can be used only in a script.',
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

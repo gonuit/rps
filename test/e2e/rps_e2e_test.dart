@@ -57,6 +57,30 @@ void main() {
     sharedE2eTests(_runProcess);
 
     group('script keys', () {
+      test(r'$confirm needs --yes without a terminal', () async {
+        const yaml = 'name: app\nscripts:\n'
+            '  reset:\n'
+            '    \$confirm: Drop the database?\n'
+            '    \$script: dart --version\n';
+        final refused = await _runIn(yaml, ['reset']);
+        final flag = await _runIn(yaml, ['--yes', 'reset']);
+        final variable = await _runIn(
+          yaml,
+          ['reset'],
+          environment: {'RPS_YES': '1'},
+        );
+        final dryRun = await _runIn(yaml, ['--dry-run', 'reset']);
+
+        expect(refused.exitCode, equals(64));
+        expect(refused.stderr, contains('Drop the database?'));
+        expect(refused.stderr, contains('rps --yes'));
+        expect(refused.stdout, isNot(contains('dart --version')));
+        expect(flag.exitCode, equals(0), reason: '${flag.stderr}');
+        expect(variable.exitCode, equals(0), reason: '${variable.stderr}');
+        expect(dryRun.exitCode, equals(0));
+        expect(dryRun.stdout, contains('? Drop the database?'));
+      });
+
       test(r'$steps stop at the first step that fails', () async {
         final result = await _runIn(
           'name: app\nscripts:\n'

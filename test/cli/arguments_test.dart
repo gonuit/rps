@@ -102,6 +102,14 @@ void main() {
       );
     });
 
+    test('reads the confirmation flag', () {
+      expect(RpsArguments.parse(['--yes', 'reset']).yes, isTrue);
+      expect(RpsArguments.parse(['-y', 'reset']).yes, isTrue);
+      expect(RpsArguments.parse(['run', '-y', 'reset']).yes, isTrue);
+      expect(RpsArguments.parse(['reset', '--yes']).yes, isFalse);
+      expect(RpsArguments.parse(['reset']).yes, isFalse);
+    });
+
     test('rejects unknown options before the script name', () {
       expect(
         () => RpsArguments.parse(['--unknown', 'build']),

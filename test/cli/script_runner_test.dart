@@ -21,6 +21,9 @@ Future<_Run> _run(
   int exitCode = 0,
   FakeFileSystem? fs,
   Map<String, String> processEnvironment = const {},
+  bool assumeYes = false,
+  bool interactive = false,
+  Confirm? confirm,
 }) async {
   final executor = FakeExecutor(exitCode: exitCode, executions: []);
   final output = StringBuffer();
@@ -34,6 +37,9 @@ Future<_Run> _run(
     dryRun: dryRun,
     fs: fs ?? FakeFileSystem(),
     processEnvironment: processEnvironment,
+    assumeYes: assumeYes,
+    interactive: interactive,
+    confirm: confirm ?? (_) => fail('Unexpected question.'),
   ).run(events);
   return _Run(executor, output.toString());
 }
@@ -68,6 +74,82 @@ scripts:
             .having((e) => e.exitCode, 'exitCode', 3)),
       );
       expect(executor.executions, equals(['echo before']));
+    });
+
+    group(r'$confirm', () {
+      const scripts = r'''
+scripts:
+  reset:
+    $confirm: Drop the database?
+    $script: echo reset
+  all:
+    $steps:
+      - echo first
+      - rps reset
+      - rps reset
+''';
+
+      test('asks once, before anything runs', () async {
+        final questions = <String>[];
+        late final FakeExecutor executor;
+        final events = ScriptsParser(
+          source: MockedScriptSource(scripts),
+          platform: const FakePlatform(),
+        ).getCommandsToExecute(['all']);
+        executor = FakeExecutor(exitCode: 0, executions: []);
+        await ScriptRunner(
+          executor: executor,
+          console: Console(sink: StringBuffer()),
+          interactive: true,
+          confirm: (message) {
+            expect(executor.executions, isEmpty);
+            questions.add(message);
+            return true;
+          },
+        ).run(events);
+
+        expect(questions, equals(['Drop the database?']));
+        expect(
+          executor.executions,
+          equals(['echo first', 'echo reset', 'echo reset']),
+        );
+      });
+
+      test('runs nothing when the user declines', () async {
+        await expectLater(
+          _run(scripts, ['all'], interactive: true, confirm: (_) => false),
+          throwsA(isA<RpsException>()
+              .having((e) => e.message, 'message', 'Cancelled.')
+              .having((e) => e.exitCode, 'exitCode', 1)),
+        );
+      });
+
+      test('fails without a terminal', () async {
+        await expectLater(
+          _run(scripts, ['reset']),
+          throwsA(isA<RpsUsageException>()
+              .having(
+                (e) => e.message,
+                'message',
+                'The script "reset" asks for confirmation: '
+                    'Drop the database?',
+              )
+              .having((e) => e.hint, 'hint', contains('--yes'))),
+        );
+      });
+
+      test('does not ask when confirmed up front', () async {
+        final run = await _run(scripts, ['reset'], assumeYes: true);
+
+        expect(run.executor.executions, equals(['echo reset']));
+      });
+
+      test('shows the question in a dry run', () async {
+        final run = await _run(scripts, ['reset'], dryRun: true);
+
+        expect(run.executor.executions, isEmpty);
+        expect(run.output, startsWith('? Drop the database?\n\n> reset\n'));
+      });
     });
 
     group(r'$steps', () {

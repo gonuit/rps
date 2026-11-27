@@ -47,10 +47,10 @@ class ScriptsAnalyzer {
     final hasScript = value.containsKey(ScriptsParser.scriptKey);
     final hasSteps = value.containsKey(ScriptsParser.stepsKey);
     if (!hasScript && !hasSteps) {
-      if (value.containsKey(ScriptsParser.argsKey)) {
-        errors.add(
-          'The "${ScriptsParser.argsKey}" key can be used only in a script.',
-        );
+      for (final key in [ScriptsParser.argsKey, ScriptsParser.confirmKey]) {
+        if (value.containsKey(key)) {
+          errors.add('The "$key" key can be used only in a script.');
+        }
       }
       return ScriptGroup(
         before: before,
@@ -81,12 +81,15 @@ class ScriptsAnalyzer {
             errors,
           )
         : null;
+    final confirm = value[ScriptsParser.confirmKey];
     final command = steps?.join('\n') ??
         _command(value[ScriptsParser.scriptKey], path, errors);
     return Script(
       command: command,
       steps: steps,
       args: _args(value[ScriptsParser.argsKey], errors),
+      confirm: _confirm(confirm, errors),
+      confirmMessage: confirm is String ? confirm : null,
       description: _string(value[ScriptsParser.descriptionKey]),
       before: before,
       after: after,
@@ -154,6 +157,15 @@ class ScriptsAnalyzer {
       }
     }
     return arguments;
+  }
+
+  bool _confirm(dynamic confirm, List<String> errors) {
+    if (confirm == null || confirm is bool) return confirm == true;
+    if (confirm is String && confirm.trim().isNotEmpty) return true;
+    errors.add(
+      'The "${ScriptsParser.confirmKey}" key must be "true" or a question.',
+    );
+    return false;
   }
 
   String? _cwd(Map<dynamic, dynamic> value, List<String> errors) {

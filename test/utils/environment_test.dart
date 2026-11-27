@@ -22,6 +22,8 @@ class FakeEnvironment implements Environment {
 
   @override
   bool get updateCheckDisabled => false;
+  @override
+  bool get assumeYes => false;
 }
 
 void main() {
