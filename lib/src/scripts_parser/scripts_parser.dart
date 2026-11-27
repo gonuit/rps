@@ -3,7 +3,7 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Parses and resolves scripts from a [ScriptsSource].
-abstract class ScriptsParser {
+class ScriptsParser {
   /// Key for the before-hook entry.
   static const beforeKey = r'$before';
 
@@ -40,59 +40,30 @@ abstract class ScriptsParser {
   /// Key for the env files entry.
   static const envFileKey = r'$envFile';
 
+  /// Keys with a special meaning in a script or a group.
+  static const specialKeys = {
+    beforeKey,
+    afterKey,
+    scriptKey,
+    descriptionKey,
+    defaultScriptKey,
+    stepsKey,
+    parallelKey,
+    argsKey,
+    confirmKey,
+    cwdKey,
+    envKey,
+    envFileKey,
+  };
+
   /// Returns `true` if [key] is a reserved special key.
-  static bool isSpecialKey(String key) => switch (key) {
-        scriptKey ||
-        beforeKey ||
-        afterKey ||
-        descriptionKey ||
-        defaultScriptKey ||
-        stepsKey ||
-        parallelKey ||
-        argsKey ||
-        confirmKey ||
-        cwdKey ||
-        envKey ||
-        envFileKey =>
-          true,
-        _ => false,
-      };
+  static bool isSpecialKey(String key) => specialKeys.contains(key);
 
-  /// Lists all available commands from the scripts source.
-  List<CommandExecuted> listCommands();
-
-  /// Resolves [arguments] into an ordered list of execution events.
-  List<ExecutionEvent> getCommandsToExecute(List<String> arguments);
-
-  /// Creates a [ScriptsParser] for the given [source].
-  factory ScriptsParser({
-    required ScriptsSource source,
-    required Platform platform,
-  }) = _ScriptParser;
-}
-
-class _Scope {
-  final String? cwd;
-  final Map<String, String> env;
-  final List<String> envFiles;
-
-  const _Scope({this.cwd, this.env = const {}, this.envFiles = const []});
-
-  _Scope enter(ScriptNode? node) {
-    if (node == null) return this;
-    return _Scope(
-      cwd: node.cwd ?? cwd,
-      env: {...env, ...node.env},
-      envFiles: [...envFiles, ...node.envFiles],
-    );
-  }
-}
-
-class _ScriptParser implements ScriptsParser {
   final ScriptsSource _source;
   final ScriptsAnalyzer _analyzer;
 
-  _ScriptParser({
+  /// Creates a [ScriptsParser] for the given [source].
+  ScriptsParser({
     required ScriptsSource source,
     required Platform platform,
   })  : _source = source,
@@ -100,14 +71,14 @@ class _ScriptParser implements ScriptsParser {
 
   ScriptNode _analyze() => _analyzer.analyze(_source.getScripts());
 
-  @override
-  List<CommandExecuted> listCommands() {
+  /// Lists all scripts of the scripts source.
+  List<ScriptInfo> listCommands() {
     final root = _analyze();
     return _listCommands(root, Context.root(), const [], const _Scope())
         .toList();
   }
 
-  Iterable<CommandExecuted> _listCommands(
+  Iterable<ScriptInfo> _listCommands(
     ScriptNode node,
     Context context,
     List<String> inheritedErrors,
@@ -117,14 +88,10 @@ class _ScriptParser implements ScriptsParser {
     final scope = parentScope.enter(node);
     switch (node) {
       case Script():
-        yield CommandExecuted(
-          command: node.command,
-          context: context,
-          description: node.description,
+        yield ScriptInfo(
+          keys: context.path,
+          script: node,
           errors: errors,
-          declaredArguments: node.args,
-          steps: node.steps,
-          parallel: node.parallel,
           confirmation: _confirmation(node, context),
           workingDirectory: scope.cwd,
           environment: scope.env,
@@ -132,17 +99,12 @@ class _ScriptParser implements ScriptsParser {
         );
       case ScriptGroup():
         for (final MapEntry(:key, :value) in node.children.entries) {
-          yield* _listCommands(
-            value,
-            context.next(key),
-            errors,
-            scope,
-          );
+          yield* _listCommands(value, context.next(key), errors, scope);
         }
     }
   }
 
-  @override
+  /// Resolves [arguments] into an ordered list of execution events.
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments) {
     final root = _analyze();
     var context = Context.root();
@@ -301,7 +263,7 @@ class _ScriptParser implements ScriptsParser {
   }
 
   void _checkArguments(Script script, Context context, List<String> arguments) {
-    final expected = CommandExecuted.getScriptArguments(script.command).length;
+    final expected = PositionalArgument.parse(script.command).length;
     if (arguments.length <= expected) return;
     throw RpsUsageException(
       'The script "${context.basePath.join(' ')}" runs several commands, '
@@ -443,6 +405,23 @@ class _ScriptParser implements ScriptsParser {
       step == null ? [...words, ...?arguments] : words,
       stack,
       const _Scope(),
+    );
+  }
+}
+
+class _Scope {
+  final String? cwd;
+  final Map<String, String> env;
+  final List<String> envFiles;
+
+  const _Scope({this.cwd, this.env = const {}, this.envFiles = const []});
+
+  _Scope enter(ScriptNode? node) {
+    if (node == null) return this;
+    return _Scope(
+      cwd: node.cwd ?? cwd,
+      env: {...env, ...node.env},
+      envFiles: [...envFiles, ...node.envFiles],
     );
   }
 }

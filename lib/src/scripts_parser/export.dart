@@ -1,4 +1,5 @@
 export 'context.dart';
+export 'script_info.dart';
 export 'script_node.dart';
 export 'scripts_analyzer.dart';
 export 'scripts_parser.dart';

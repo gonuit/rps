@@ -41,24 +41,18 @@ void main() {
       expect(cmd.errorMessage, isNull);
     });
 
-    test('errorMessage returns joined errors', () {
+    test('compile throws when the positional arguments have a gap', () {
       final ctx = Context.root();
       final cmd = CommandExecuted(
-        command: 'echo',
+        command: r'echo ${1}',
         context: ctx.next('x'),
-        errors: ['err1', 'err2'],
+        arguments: ['a', 'b'],
       );
-      expect(cmd.errorMessage, equals('err1\nerr2'));
-    });
-
-    test('compile throws on errors', () {
-      final ctx = Context.root();
-      final cmd = CommandExecuted(
-        command: 'echo',
-        context: ctx.next('x'),
-        errors: ['bad command'],
+      expect(
+        cmd.errorMessage,
+        equals(r'The script defines unused positional argument(s): ${0}'),
       );
-      expect(() => cmd.compile(), throwsA(isA<RpsException>()));
+      expect(() => cmd.compile(), throwsA(isA<RpsConfigException>()));
     });
 
     test('compile throws when positional arg used in hook', () {
@@ -80,32 +74,22 @@ void main() {
       expect(a.hashCode, equals(b.hashCode));
     });
 
-    test('description is stored', () {
-      final ctx = Context.root();
-      final cmd = CommandExecuted(
-        command: 'echo',
-        context: ctx.next('x'),
-        description: 'prints hello',
-      );
-      expect(cmd.description, equals('prints hello'));
-    });
-
     test('isHook defaults to false', () {
       final ctx = Context.root();
       final cmd = CommandExecuted(command: 'echo', context: ctx.next('x'));
       expect(cmd.isHook, isFalse);
     });
 
-    test('getScriptArguments parses positional args', () {
-      final args = CommandExecuted.getScriptArguments(r'echo ${0} ${1}');
+    test('PositionalArgument.parse reads positional args', () {
+      final args = PositionalArgument.parse(r'echo ${0} ${1}');
       expect(args.length, equals(2));
       expect(args[0].index, equals(0));
       expect(args[1].index, equals(1));
     });
 
-    test('getScriptArguments throws on gaps', () {
+    test('PositionalArgument.parse throws on gaps', () {
       expect(
-        () => CommandExecuted.getScriptArguments(r'echo ${0} ${2}'),
+        () => PositionalArgument.parse(r'echo ${0} ${2}'),
         throwsA(isA<RpsException>()),
       );
     });

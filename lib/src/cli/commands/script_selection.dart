@@ -39,7 +39,7 @@ class ScriptSelectionCommand {
   Future<void> run(Console console, {Console? errors}) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
-    final commands = parser.listCommands().where((c) => !c.isHook).toList();
+    final commands = parser.listCommands();
 
     if (commands.isEmpty) {
       throw RpsException('No scripts found.');
@@ -82,7 +82,7 @@ class ScriptSelectionCommand {
 
     final runCommandArguments = [
       'run',
-      ...selected.context.path,
+      ...selected.keys,
       ...named,
       ...arguments,
     ];
@@ -100,9 +100,9 @@ class ScriptSelectionCommand {
 }
 
 /// Prompts the user to select a command from the given [commands] list.
-CommandExecuted? selectCommand(
+ScriptInfo? selectCommand(
   Console console,
-  List<CommandExecuted> commands,
+  List<ScriptInfo> commands,
 ) {
   console.writeln('\n${bold('Which scripts do you want to run?')}');
   for (int i = 0; i < commands.length; i++) {

@@ -20,7 +20,7 @@ class LsCommand {
   Future<void> run(Console console, {bool json = false}) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
-    final commands = parser.listCommands().where((c) => !c.isHook).toList();
+    final commands = parser.listCommands();
     if (json) {
       console.writeln(const JsonEncoder.withIndent('  ').convert({
         'scripts': [
