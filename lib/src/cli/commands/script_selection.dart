@@ -51,7 +51,7 @@ class ScriptSelectionCommand {
     }
 
     console.writeln('${boldGreen('>')} ${selected.path}');
-    console.writeln('${boldGreen(r'$')} ${bold(selected.command)}\n');
+    console.writeln('${boldGreen(r'$')} ${bold(selected.summary)}\n');
 
     if (selected.errors.isNotEmpty) {
       throw RpsConfigException(selected.errors.join('\n'));
@@ -107,12 +107,11 @@ CommandExecuted? selectCommand(
   console.writeln('\n${bold('Which scripts do you want to run?')}');
   for (int i = 0; i < commands.length; i++) {
     final command = commands[i];
-    final cmd = command.command.replaceAll('\n', ' ').trim();
     console
       ..write('  ${green('${i + 1})')} ')
       ..write(bold(command.path))
       ..write(' ')
-      ..writeln(gray('($cmd)'));
+      ..writeln(gray('(${command.summary})'));
   }
 
   final line = prompts.get(

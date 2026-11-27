@@ -127,6 +127,8 @@ class _ScriptParser implements ScriptsParser {
           description: node.description,
           errors: errors,
           declaredArguments: node.args,
+          steps: node.steps,
+          parallel: node.parallel,
           confirmation: _confirmation(node, context),
           workingDirectory: scope.cwd,
           environment: scope.env,

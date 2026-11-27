@@ -104,8 +104,20 @@ void sharedE2eTests(RpsRunner run) {
           'command': r'echo "flutter build ${0} -t lib/main.dart --release"',
           'description': 'Builds the specified target using positional arg',
           'arguments': [
-            {'name': r'${0}', 'index': 0},
+            {
+              'name': r'${0}',
+              'index': 0,
+              'option': null,
+              'required': true,
+              'default': null,
+            },
           ],
+          'steps': null,
+          'parallel': null,
+          'cwd': null,
+          'env': <String>[],
+          'envFiles': <String>[],
+          'confirm': null,
           'errors': [],
         }),
       );

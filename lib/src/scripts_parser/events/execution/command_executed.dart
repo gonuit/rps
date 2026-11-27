@@ -54,6 +54,18 @@ class CommandExecuted extends ExecutionEvent {
   /// Named arguments declared by the script.
   final List<ScriptArgument> declaredArguments;
 
+  /// Commands the script runs one after another, if it is a sequence.
+  final List<String>? steps;
+
+  /// Commands the script runs at the same time, if it is a parallel group.
+  final List<String>? parallel;
+
+  /// The command on one line, as shown in lists.
+  String get summary =>
+      steps?.join(' && ') ??
+      parallel?.join(' & ') ??
+      command.replaceAll('\n', ' ').trim();
+
   /// The question the script asks before it runs, if any.
   final String? confirmation;
 
@@ -101,6 +113,8 @@ class CommandExecuted extends ExecutionEvent {
     required this.step,
     required this.named,
     required this.declaredArguments,
+    required this.steps,
+    required this.parallel,
     required this.confirmation,
     required this.commandArguments,
     required this.workingDirectory,
@@ -116,6 +130,8 @@ class CommandExecuted extends ExecutionEvent {
     String? description,
     Map<String, String> named = const {},
     List<ScriptArgument> declaredArguments = const [],
+    List<String>? steps,
+    List<String>? parallel,
     String? confirmation,
     bool isHook = false,
     (int, int)? step,
@@ -144,6 +160,8 @@ class CommandExecuted extends ExecutionEvent {
       step: step,
       named: named,
       declaredArguments: declaredArguments,
+      steps: steps,
+      parallel: parallel,
       confirmation: confirmation,
       workingDirectory: workingDirectory,
       environment: environment,

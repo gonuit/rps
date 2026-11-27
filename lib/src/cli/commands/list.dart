@@ -31,8 +31,28 @@ class LsCommand {
               'description': command.description,
               'arguments': [
                 for (final argument in command.commandArguments)
-                  {'name': argument.name, 'index': argument.index},
+                  {
+                    'name': argument.name,
+                    'index': argument.index,
+                    'option': null,
+                    'required': true,
+                    'default': null,
+                  },
+                for (final argument in command.declaredArguments)
+                  {
+                    'name': argument.name,
+                    'index': null,
+                    'option': '--${argument.name}',
+                    'required': argument.isRequired,
+                    'default': argument.defaultValue,
+                  },
               ],
+              'steps': command.steps,
+              'parallel': command.parallel,
+              'cwd': command.workingDirectory,
+              'env': command.environment.keys.toList(),
+              'envFiles': command.envFiles,
+              'confirm': command.confirmation,
               'errors': command.errors,
             },
         ],
@@ -46,7 +66,7 @@ class LsCommand {
           ..write('  ')
           ..write(lightBlue(command.path))
           ..write(' ')
-          ..writeln('(${gray(command.command)})');
+          ..writeln('(${gray(command.summary)})');
         final errorMessage = command.errorMessage;
         if (errorMessage != null) {
           console
@@ -57,6 +77,23 @@ class LsCommand {
           console
             ..write('    ')
             ..writeln(command.description);
+        }
+        final details = [
+          if (command.declaredArguments.isNotEmpty)
+            'Arguments: ${[
+              for (final argument in command.declaredArguments)
+                argument.isRequired
+                    ? '--${argument.name}'
+                    : '[--${argument.name}=${argument.defaultValue}]',
+            ].join(' ')}',
+          if (command.workingDirectory != null)
+            'Runs in: ${command.workingDirectory}',
+          if (command.confirmation != null) 'Asks for confirmation.',
+        ];
+        for (final detail in details) {
+          console
+            ..write('    ')
+            ..writeln(gray(detail));
         }
       }
     }
