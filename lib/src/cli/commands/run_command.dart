@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/cli/script_runner.dart';
+import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
@@ -18,14 +19,18 @@ class RunCommand {
 
   final Platform _platform;
 
+  final FileSystem _fs;
+
   /// Creates a [RunCommand].
   RunCommand({
     required this.executor,
     this.dryRun = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
+    FileSystem fs = const SystemFileSystem(),
   })  : _getScriptsSource = getScriptsSource,
-        _platform = platform;
+        _platform = platform,
+        _fs = fs;
 
   List<ExecutionEvent> _resolve(ScriptsParser parser, List<String> arguments) {
     if (arguments.firstOrNull != 'run') {
@@ -59,6 +64,7 @@ class RunCommand {
       executor: executor,
       console: console,
       dryRun: dryRun,
+      fs: _fs,
     ).run(events);
   }
 }

@@ -77,6 +77,7 @@ Future<int> runCli(
           executor: runExecutor,
           dryRun: arguments.dryRun,
           platform: platform,
+          fs: fs,
         ).run(out, arguments.script);
       case RpsAction.select:
         if (environment.isCI) {
@@ -87,6 +88,7 @@ Future<int> runCli(
             executor: runExecutor,
             dryRun: arguments.dryRun,
             platform: platform,
+            fs: fs,
           ).run(out);
         } else {
           printHelp(out, package);

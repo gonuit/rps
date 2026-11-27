@@ -9,6 +9,9 @@ abstract interface class FileSystem {
   /// Returns `true` if a file exists at [path].
   bool fileExists(String path);
 
+  /// Returns `true` if a directory exists at [path].
+  bool directoryExists(String path);
+
   /// Reads the entire file at [path] as a string.
   String readFile(String path);
 
@@ -32,6 +35,9 @@ class SystemFileSystem implements FileSystem {
 
   @override
   bool fileExists(String path) => io.File(path).existsSync();
+
+  @override
+  bool directoryExists(String path) => io.Directory(path).existsSync();
 
   @override
   String readFile(String path) => io.File(path).readAsStringSync();

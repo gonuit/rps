@@ -9,8 +9,11 @@ sealed class ScriptNode {
   /// The reason nothing under this node can be run, if any.
   final String? error;
 
+  /// Working directory of the commands under this node, if set.
+  final String? cwd;
+
   /// Creates a [ScriptNode].
-  const ScriptNode({this.before, this.after, this.error});
+  const ScriptNode({this.before, this.after, this.error, this.cwd});
 }
 
 /// A group of scripts.
@@ -24,6 +27,7 @@ class ScriptGroup extends ScriptNode {
     super.before,
     super.after,
     super.error,
+    super.cwd,
   });
 }
 
@@ -42,5 +46,6 @@ class Script extends ScriptNode {
     super.error,
     super.before,
     super.after,
+    super.cwd,
   });
 }

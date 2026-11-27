@@ -140,6 +140,29 @@ test:
       );
     });
 
+    test(r'reads $cwd of groups and scripts', () {
+      final root = _analyze(r'''
+$cwd: packages
+app:
+  $cwd: packages/app
+  build:
+    $cwd: packages/app/android
+    $script: ./gradlew build
+bad:
+  $cwd: 5
+  $script: echo bad
+''') as ScriptGroup;
+      final app = root.children['app'] as ScriptGroup;
+
+      expect(root.cwd, equals('packages'));
+      expect(app.cwd, equals('packages/app'));
+      expect(app.children['build']!.cwd, equals('packages/app/android'));
+      expect(
+        root.children['bad']!.error,
+        equals(r'The "$cwd" key must be a path.'),
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

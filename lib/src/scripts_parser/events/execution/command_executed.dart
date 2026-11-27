@@ -60,6 +60,9 @@ class CommandExecuted extends ExecutionEvent {
   /// Errors encountered while parsing this command.
   final List<String> errors;
 
+  /// Directory the command runs in, relative to the project, if set.
+  final String? workingDirectory;
+
   /// Returns a combined error message, or null if there are no errors.
   String? get errorMessage {
     final message = errors.whereType<String>().join('\n');
@@ -76,6 +79,7 @@ class CommandExecuted extends ExecutionEvent {
     required this.description,
     required this.isHook,
     required this.commandArguments,
+    required this.workingDirectory,
   });
 
   /// Creates a [CommandExecuted], parsing positional arguments from [command].
@@ -86,6 +90,7 @@ class CommandExecuted extends ExecutionEvent {
     String? description,
     bool isHook = false,
     List<String>? errors,
+    String? workingDirectory,
   }) {
     final errorsList = errors != null ? List<String>.of(errors) : <String>[];
     List<PositionalArgument>? scriptArguments;
@@ -104,6 +109,7 @@ class CommandExecuted extends ExecutionEvent {
       commandArguments: scriptArguments,
       description: description,
       isHook: isHook,
+      workingDirectory: workingDirectory,
     );
   }
 

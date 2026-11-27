@@ -29,6 +29,10 @@ class FakeFileSystem implements FileSystem {
   bool fileExists(String path) => files.containsKey(_normalize(path));
 
   @override
+  bool directoryExists(String path) =>
+      directories.containsKey(_normalize(path));
+
+  @override
   String readFile(String path) {
     final content = files[_normalize(path)];
     if (content == null) throw Exception('File not found: $path');

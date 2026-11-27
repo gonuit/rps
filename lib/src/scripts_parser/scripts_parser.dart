@@ -19,13 +19,17 @@ abstract class ScriptsParser {
   /// Key for the default platform script entry.
   static const defaultScriptKey = r'$default';
 
+  /// Key for the working directory entry.
+  static const cwdKey = r'$cwd';
+
   /// Returns `true` if [key] is a reserved special key.
   static bool isSpecialKey(String key) => switch (key) {
         scriptKey ||
         beforeKey ||
         afterKey ||
         descriptionKey ||
-        defaultScriptKey =>
+        defaultScriptKey ||
+        cwdKey =>
           true,
         _ => false,
       };
@@ -41,6 +45,17 @@ abstract class ScriptsParser {
     required ScriptsSource source,
     required Platform platform,
   }) = _ScriptParser;
+}
+
+class _Scope {
+  final String? cwd;
+
+  const _Scope({this.cwd});
+
+  _Scope enter(ScriptNode? node) {
+    if (node == null) return this;
+    return _Scope(cwd: node.cwd ?? cwd);
+  }
 }
 
 class _ScriptParser implements ScriptsParser {
@@ -62,15 +77,18 @@ class _ScriptParser implements ScriptsParser {
   @override
   List<CommandExecuted> listCommands() {
     final root = _analyze();
-    return _listCommands(root, Context.root(root), const []).toList();
+    return _listCommands(root, Context.root(root), const [], const _Scope())
+        .toList();
   }
 
   Iterable<CommandExecuted> _listCommands(
     ScriptNode node,
     Context context,
     List<String> inheritedErrors,
+    _Scope parentScope,
   ) sync* {
     final errors = [...inheritedErrors, if (node.error != null) node.error!];
+    final scope = parentScope.enter(node);
     switch (node) {
       case Script():
         yield CommandExecuted(
@@ -78,10 +96,16 @@ class _ScriptParser implements ScriptsParser {
           context: context,
           description: node.description,
           errors: errors,
+          workingDirectory: scope.cwd,
         );
       case ScriptGroup():
         for (final MapEntry(:key, :value) in node.children.entries) {
-          yield* _listCommands(value, _child(context, key, value), errors);
+          yield* _listCommands(
+            value,
+            _child(context, key, value),
+            errors,
+            scope,
+          );
         }
     }
   }
@@ -91,13 +115,15 @@ class _ScriptParser implements ScriptsParser {
     final root = _analyze();
     var context = Context.root(root);
     ScriptNode? node = root;
+    var scope = const _Scope();
     // If command is not specified, fallback to run
     if (arguments.isEmpty) {
       node = root is ScriptGroup ? root.children['run'] : null;
       context = _child(context, 'run', node);
+      scope = scope.enter(root);
     }
 
-    return _resolve(root, node, context, arguments, const []).toList();
+    return _resolve(root, node, context, arguments, const [], scope).toList();
   }
 
   Iterable<ExecutionEvent> _resolve(
@@ -106,6 +132,7 @@ class _ScriptParser implements ScriptsParser {
     Context context,
     List<String> arguments,
     List<String> stack,
+    _Scope parentScope,
   ) sync* {
     if (node == null) {
       throw RpsUsageException(
@@ -114,6 +141,7 @@ class _ScriptParser implements ScriptsParser {
     }
     final error = node.error;
     if (error != null) throw RpsConfigException(error);
+    final scope = parentScope.enter(node);
 
     yield* _hook(
       root,
@@ -122,6 +150,7 @@ class _ScriptParser implements ScriptsParser {
       ScriptsParser.beforeKey,
       'before',
       stack,
+      scope,
     );
 
     switch (node) {
@@ -132,6 +161,7 @@ class _ScriptParser implements ScriptsParser {
           command: node.command,
           arguments: arguments,
           stack: _enter(stack, context.basePath.join(' ')),
+          scope: scope,
         );
       case ScriptGroup():
         final nextKey = arguments.firstOrNull;
@@ -148,6 +178,7 @@ class _ScriptParser implements ScriptsParser {
           _child(context, nextKey, child),
           arguments.skip(1).toList(),
           stack,
+          scope,
         );
     }
 
@@ -158,6 +189,7 @@ class _ScriptParser implements ScriptsParser {
       ScriptsParser.afterKey,
       'after',
       stack,
+      scope,
     );
   }
 
@@ -168,6 +200,7 @@ class _ScriptParser implements ScriptsParser {
     String key,
     String name,
     List<String> stack,
+    _Scope scope,
   ) sync* {
     if (command == null) return;
     final hookContext = _child(context, key, null);
@@ -179,6 +212,7 @@ class _ScriptParser implements ScriptsParser {
       command: command,
       isHook: true,
       stack: _enter(stack, hookContext.basePath.join(' ')),
+      scope: scope,
     );
   }
 
@@ -196,6 +230,7 @@ class _ScriptParser implements ScriptsParser {
     required Context context,
     required String command,
     required List<String> stack,
+    required _Scope scope,
     List<String>? arguments,
     bool isHook = false,
   }) sync* {
@@ -205,6 +240,7 @@ class _ScriptParser implements ScriptsParser {
         context: context,
         arguments: arguments,
         isHook: isHook,
+        workingDirectory: scope.cwd,
       );
       return;
     }
@@ -227,6 +263,7 @@ class _ScriptParser implements ScriptsParser {
         ...?arguments,
       ],
       stack,
+      const _Scope(),
     );
   }
 }

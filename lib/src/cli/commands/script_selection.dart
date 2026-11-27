@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:prompts/prompts.dart' as prompts;
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// Command that presents an interactive script selection menu.
@@ -17,14 +18,18 @@ class ScriptSelectionCommand {
 
   final Platform _platform;
 
+  final FileSystem _fs;
+
   /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
     required this.executor,
     this.dryRun = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
+    FileSystem fs = const SystemFileSystem(),
   })  : _getScriptsSource = getScriptsSource,
-        _platform = platform;
+        _platform = platform,
+        _fs = fs;
 
   /// Asks for a script and its arguments, then runs it.
   Future<void> run(Console console) async {
@@ -68,6 +73,7 @@ class ScriptSelectionCommand {
       dryRun: dryRun,
       getScriptsSource: () => source,
       platform: _platform,
+      fs: _fs,
     ).run(console, runCommandArguments);
   }
 }

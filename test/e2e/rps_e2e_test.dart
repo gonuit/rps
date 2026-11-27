@@ -24,6 +24,9 @@ Future<ProcessResult> _runIn(
   String yaml,
   List<String> args, {
   String? rpsYaml,
+  Map<String, String> files = const {},
+  Map<String, String> environment = const {},
+  void Function(Directory directory)? verify,
 }) async {
   final directory = Directory.systemTemp.createTempSync('rps_e2e_');
   try {
@@ -31,12 +34,19 @@ Future<ProcessResult> _runIn(
     if (rpsYaml != null) {
       File('${directory.path}/rps.yaml').writeAsStringSync(rpsYaml);
     }
-    return await Process.run(
+    for (final MapEntry(key: path, value: content) in files.entries) {
+      File('${directory.path}/$path')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(content);
+    }
+    final result = await Process.run(
       Platform.resolvedExecutable,
       ['${Directory.current.path}/bin/rps.dart', ...args],
       workingDirectory: directory.path,
-      environment: {'CI': 'true'},
+      environment: {'CI': 'true', ...environment},
     );
+    verify?.call(directory);
+    return result;
   } finally {
     directory.deleteSync(recursive: true);
   }
@@ -45,6 +55,36 @@ Future<ProcessResult> _runIn(
 void main() {
   group('E2E (process)', () {
     sharedE2eTests(_runProcess);
+
+    group('script keys', () {
+      test(r'$cwd runs the script in the directory', () async {
+        final result = await _runIn(
+          'name: app\nscripts:\n'
+          '  version:\n'
+          '    \$cwd: packages/app\n'
+          '    \$script: dart --version > out.txt\n',
+          ['version'],
+          files: {'packages/app/keep.txt': ''},
+          verify: (directory) {
+            expect(
+              File('${directory.path}/packages/app/out.txt').existsSync(),
+              isTrue,
+            );
+          },
+        );
+        final missing = await _runIn(
+          'name: app\nscripts:\n'
+          '  version:\n'
+          '    \$cwd: nope\n'
+          '    \$script: dart --version\n',
+          ['version'],
+        );
+
+        expect(result.exitCode, equals(0), reason: '${result.stderr}');
+        expect(missing.exitCode, equals(78));
+        expect(missing.stderr, contains('does not exist'));
+      });
+    });
 
     group('exit codes', () {
       test('configuration errors exit with 78', () async {

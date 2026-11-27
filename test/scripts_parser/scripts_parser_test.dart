@@ -54,6 +54,8 @@ class FakeExecutor extends Executor {
 
   final int exitCode;
   final List<String> executions;
+  final List<String?> workingDirectories = [];
+  final List<Map<String, String>?> environments = [];
 
   @override
   Future<int> execute(
@@ -62,6 +64,8 @@ class FakeExecutor extends Executor {
     String? workingDirectory,
   }) async {
     executions.add(command);
+    workingDirectories.add(workingDirectory);
+    environments.add(environment);
     return exitCode;
   }
 }

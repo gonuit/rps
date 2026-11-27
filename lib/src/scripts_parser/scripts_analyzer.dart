@@ -27,21 +27,27 @@ class ScriptsAnalyzer {
       return Script(command: value.toString(), error: _invalidType(value));
     }
 
-    final before = _string(value[ScriptsParser.beforeKey]);
-    final after = _string(value[ScriptsParser.afterKey]);
+    final errors = <String>[];
     final unknownKeys = value.keys
         .map((key) => '$key')
         .where((key) => key.startsWith(r'$'))
         .where((key) => !ScriptsParser.isSpecialKey(key));
-    final unknownKeysError = unknownKeys.isEmpty
-        ? null
-        : 'Unknown key: ${unknownKeys.map((key) => '"$key"').join(', ')}.';
+    if (unknownKeys.isNotEmpty) {
+      errors.add(
+        'Unknown key: ${unknownKeys.map((key) => '"$key"').join(', ')}.',
+      );
+    }
+
+    final before = _string(value[ScriptsParser.beforeKey]);
+    final after = _string(value[ScriptsParser.afterKey]);
+    final cwd = _cwd(value, errors);
 
     if (!value.containsKey(ScriptsParser.scriptKey)) {
       return ScriptGroup(
         before: before,
         after: after,
-        error: unknownKeysError,
+        cwd: cwd,
+        error: _join(errors),
         children: {
           for (final key in value.keys)
             if (!'$key'.startsWith(r'$'))
@@ -50,50 +56,46 @@ class ScriptsAnalyzer {
       );
     }
 
-    final description = _string(value[ScriptsParser.descriptionKey]);
-    final script = value[ScriptsParser.scriptKey];
-    if (script is String) {
-      return Script(
-        command: script,
-        description: description,
-        error: unknownKeysError,
-        before: before,
-        after: after,
-      );
-    }
+    final command = _command(value[ScriptsParser.scriptKey], path, errors);
+    return Script(
+      command: command,
+      description: _string(value[ScriptsParser.descriptionKey]),
+      before: before,
+      after: after,
+      cwd: cwd,
+      error: _join(errors),
+    );
+  }
+
+  String _command(dynamic script, List<String> path, List<String> errors) {
+    if (script is String) return script;
     if (script is! Map) {
-      return Script(
-        command: script.toString(),
-        description: description,
-        error: _invalidType(script),
-        before: before,
-        after: after,
-      );
+      errors.add(_invalidType(script));
+      return script.toString();
     }
 
     final platformKey = '\$${_platform.operatingSystem}';
     final command =
         script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
-    if (command is String) {
-      return Script(
-        command: command,
-        description: description,
-        error: unknownKeysError,
-        before: before,
-        after: after,
-      );
-    }
-    return Script(
-      command: '-',
-      description: description,
-      before: before,
-      after: after,
-      error: 'No platform script key for the command: "${path.join(' ')}". '
-          'Consider adding the key for the current '
-          'platform: "$platformKey" or the default script '
-          'key: "${ScriptsParser.defaultScriptKey}".',
+    if (command is String) return command;
+    errors.add(
+      'No platform script key for the command: "${path.join(' ')}". '
+      'Consider adding the key for the current '
+      'platform: "$platformKey" or the default script '
+      'key: "${ScriptsParser.defaultScriptKey}".',
     );
+    return '-';
   }
+
+  String? _cwd(Map<dynamic, dynamic> value, List<String> errors) {
+    final cwd = value[ScriptsParser.cwdKey];
+    if (cwd == null || cwd is String) return cwd as String?;
+    errors.add('The "${ScriptsParser.cwdKey}" key must be a path.');
+    return null;
+  }
+
+  String? _join(List<String> errors) =>
+      errors.isEmpty ? null : errors.join('\n');
 
   String? _string(dynamic value) => value is String ? value : null;
 

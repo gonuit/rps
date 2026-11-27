@@ -294,6 +294,51 @@ scripts:
       expect(parser.getCommandsToExecute(['ok']), hasLength(1));
     });
 
+    test(r'commands use the nearest $cwd', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  $cwd: root-dir
+  plain: echo plain
+  app:
+    $cwd: packages/app
+    $before: echo before
+    build: echo build
+    android:
+      $cwd: packages/app/android
+      $script: echo android
+    ref: rps plain
+'''),
+        platform: const FakePlatform(),
+      );
+
+      List<String?> directories(List<String> arguments) => parser
+          .getCommandsToExecute(arguments)
+          .whereType<CommandExecuted>()
+          .map((e) => e.workingDirectory)
+          .toList();
+
+      expect(directories(['plain']), equals(['root-dir']));
+      expect(
+        directories(['app', 'build']),
+        equals(['packages/app', 'packages/app']),
+      );
+      expect(
+        directories(['app', 'android']),
+        equals(['packages/app', 'packages/app/android']),
+      );
+      expect(directories(['app', 'ref']), equals(['packages/app', 'root-dir']));
+      expect(
+        parser.listCommands().map((e) => e.workingDirectory),
+        equals([
+          'root-dir',
+          'packages/app',
+          'packages/app/android',
+          'packages/app'
+        ]),
+      );
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''
