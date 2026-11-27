@@ -2,9 +2,9 @@ import 'package:rps/rps.dart';
 import '../mocks/fake_platform.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_executor.dart';
 import '../mocks/script_source.mock.dart';
 import '../mocks/stream_sink_controller.dart';
-import '../scripts_parser/scripts_parser_test.dart';
 
 void main() {
   group('RunCommand.run', () {

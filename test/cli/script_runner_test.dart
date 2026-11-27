@@ -3,10 +3,10 @@ import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/cli/script_runner.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_executor.dart';
 import '../mocks/fake_file_system.dart';
 import '../mocks/fake_platform.dart';
 import '../mocks/script_source.mock.dart';
-import '../scripts_parser/scripts_parser_test.dart';
 
 class _ScriptedExecutor extends Executor {
   _ScriptedExecutor(this.exitCodes) : super(shell: const PosixShell());

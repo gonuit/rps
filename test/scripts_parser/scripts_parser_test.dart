@@ -1,7 +1,7 @@
 import 'package:rps/rps.dart';
-import 'package:rps/src/cli/executor.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_executor.dart';
 import '../mocks/fake_platform.dart';
 import '../mocks/script_source.mock.dart';
 import '../mocks/stream_sink_controller.dart';
@@ -45,31 +45,6 @@ scripts:
     $after: echo ${0}
 
 ''';
-
-class FakeExecutor extends Executor {
-  FakeExecutor({required this.exitCode, required this.executions})
-      : super(
-          shell: const PosixShell(),
-        );
-
-  final int exitCode;
-  final List<String> executions;
-  final List<String?> workingDirectories = [];
-  final List<Map<String, String>?> environments = [];
-
-  @override
-  Future<int> execute(
-    String command, {
-    Map<String, String>? environment,
-    String? workingDirectory,
-    CommandOutput? output,
-  }) async {
-    executions.add(command);
-    workingDirectories.add(workingDirectory);
-    environments.add(environment);
-    return exitCode;
-  }
-}
 
 void main() {
   final consoleSink = StreamSinkController();

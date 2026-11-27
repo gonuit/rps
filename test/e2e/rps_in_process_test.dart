@@ -1,55 +1,14 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli_runner.dart';
-import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/update_check/clock.dart';
-import 'package:rps/src/utils/environment.dart';
 import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
 
+import '../mocks/fake_environment.dart';
+import '../mocks/fake_executor.dart';
 import '../mocks/stream_sink_controller.dart';
 import 'shared_e2e_tests.dart';
-
-class _CiEnvironment implements Environment {
-  final bool _isCI;
-  const _CiEnvironment(this._isCI);
-
-  @override
-  bool get isCI => _isCI;
-
-  @override
-  bool get hasTerminal => true;
-
-  @override
-  bool get stdoutHasTerminal => true;
-
-  @override
-  bool get stderrHasTerminal => true;
-
-  @override
-  bool get noColor => false;
-
-  @override
-  bool get updateCheckDisabled => false;
-  @override
-  bool get assumeYes => false;
-}
-
-class _NoOpExecutor extends Executor {
-  _NoOpExecutor()
-      : super(
-          shell: const PosixShell(),
-        );
-
-  @override
-  Future<int> execute(
-    String command, {
-    Map<String, String>? environment,
-    String? workingDirectory,
-    CommandOutput? output,
-  }) async =>
-      0;
-}
 
 Future<RpsResult> _runInProcess(List<String> args, {bool ci = false}) async {
   final stdoutSink = StreamSinkController();
@@ -60,11 +19,11 @@ Future<RpsResult> _runInProcess(List<String> args, {bool ci = false}) async {
     args,
     console: console,
     errorSink: stderrSink,
-    environment: _CiEnvironment(ci),
+    environment: FakeEnvironment(isCI: ci),
     platform: const SystemPlatform(),
     fs: const SystemFileSystem(),
     clock: const SystemClock(),
-    executor: _NoOpExecutor(),
+    executor: FakeExecutor(),
   );
 
   return RpsResult(

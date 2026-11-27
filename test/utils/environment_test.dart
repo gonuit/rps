@@ -1,38 +1,8 @@
 import 'package:rps/src/utils/environment.dart';
 import 'package:test/test.dart';
 
-class FakeEnvironment implements Environment {
-  final bool _isCI;
-  const FakeEnvironment({required bool isCI}) : _isCI = isCI;
-
-  @override
-  bool get isCI => _isCI;
-
-  @override
-  bool get hasTerminal => true;
-
-  @override
-  bool get stdoutHasTerminal => true;
-
-  @override
-  bool get stderrHasTerminal => true;
-
-  @override
-  bool get noColor => false;
-
-  @override
-  bool get updateCheckDisabled => false;
-  @override
-  bool get assumeYes => false;
-}
-
 void main() {
   group('Environment', () {
-    test('FakeEnvironment returns configured value', () {
-      expect(const FakeEnvironment(isCI: true).isCI, isTrue);
-      expect(const FakeEnvironment(isCI: false).isCI, isFalse);
-    });
-
     test('isCIValue treats set values as CI', () {
       expect(SystemEnvironment.isCIValue('true'), isTrue);
       expect(SystemEnvironment.isCIValue('1'), isTrue);
