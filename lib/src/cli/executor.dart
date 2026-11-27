@@ -1,11 +1,9 @@
 import 'package:rps/rps.dart' as rps;
-import 'package:rps/src/models/interpreter.dart';
-import 'package:rps/src/utils/platform.dart';
 
-/// Runs shell commands with the configured interpreter.
+/// Runs commands in the configured shell.
 class Executor {
-  /// Optional interpreter override for command execution.
-  final Interpreter? interpreter;
+  /// The shell that runs the commands.
+  final rps.Shell shell;
 
   /// Whether to print verbose diagnostic output.
   final bool verbose;
@@ -13,15 +11,12 @@ class Executor {
   /// Optional sink for verbose output.
   final StringSink? out;
 
-  final Platform _platform;
-
   /// Creates an [Executor].
   Executor({
-    required this.interpreter,
-    required Platform platform,
+    required this.shell,
     this.verbose = false,
     this.out,
-  }) : _platform = platform;
+  });
 
   /// Executes the given shell [command] and returns the exit code.
   Future<int> execute(
@@ -29,10 +24,9 @@ class Executor {
   ) {
     return rps.execute(
       command,
-      interpreter: interpreter,
+      shell: shell,
       verbose: verbose,
       out: out,
-      platform: _platform,
     );
   }
 }

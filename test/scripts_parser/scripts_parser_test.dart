@@ -49,8 +49,7 @@ scripts:
 class FakeExecutor extends Executor {
   FakeExecutor({required this.exitCode, required this.executions})
       : super(
-          interpreter: null,
-          platform: const FakePlatform(),
+          shell: const PosixShell(),
         );
 
   final int exitCode;

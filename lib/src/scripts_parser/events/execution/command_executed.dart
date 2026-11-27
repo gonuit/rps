@@ -142,13 +142,13 @@ class CommandExecuted extends ExecutionEvent {
         .toList();
   }
 
-  String? _serializeArguments(List<String> arguments, ShellSyntax syntax) {
+  String? _serializeArguments(List<String> arguments, Shell shell) {
     if (arguments.isEmpty) return null;
-    return arguments.map((arg) => quoteArgument(arg, syntax)).join(' ');
+    return arguments.map(shell.quote).join(' ');
   }
 
   /// Compiles the command. Returns the command ready for execution.
-  String compile({ShellSyntax syntax = ShellSyntax.posix}) {
+  String compile({Shell shell = const PosixShell()}) {
     final errorMessage = this.errorMessage;
     if (errorMessage != null) {
       throw RpsConfigException(errorMessage);
@@ -201,10 +201,10 @@ class CommandExecuted extends ExecutionEvent {
 
       return [
         filledCommand,
-        _serializeArguments(arguments.sublist(lastUsed + 1), syntax)
+        _serializeArguments(arguments.sublist(lastUsed + 1), shell)
       ].nonNulls.join(' ');
     } else {
-      return [command, _serializeArguments(arguments, syntax)]
+      return [command, _serializeArguments(arguments, shell)]
           .nonNulls
           .join(' ');
     }

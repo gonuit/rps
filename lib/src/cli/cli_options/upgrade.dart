@@ -32,7 +32,7 @@ class UpgradeOption extends CliOption {
 
     final exitCode = await execute(
       command,
-      platform: _platform,
+      shell: Shell.of(null, _platform),
     );
     if (exitCode != 0) {
       throw CliException(

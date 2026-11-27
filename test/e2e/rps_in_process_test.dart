@@ -7,7 +7,6 @@ import 'package:rps/src/utils/file_system.dart';
 import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
 
-import '../mocks/fake_platform.dart';
 import '../mocks/stream_sink_controller.dart';
 import 'shared_e2e_tests.dart';
 
@@ -37,8 +36,7 @@ class _CiEnvironment implements Environment {
 class _NoOpExecutor extends Executor {
   _NoOpExecutor()
       : super(
-          interpreter: null,
-          platform: const FakePlatform(),
+          shell: const PosixShell(),
         );
 
   @override

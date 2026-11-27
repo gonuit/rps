@@ -59,8 +59,7 @@ Future<int> runCli(
     }
 
     executor ??= Executor(
-      interpreter: config.getInterpreter(platform),
-      platform: platform,
+      shell: Shell.of(config.getInterpreter(platform), platform),
     );
 
     final help = HelpOption(console: out, package: package);

@@ -6,6 +6,6 @@ export 'src/cli/console.dart';
 export 'src/exceptions/rps_exception.dart';
 export 'src/sources/pubspec.dart';
 export 'src/scripts_parser/export.dart';
+export 'src/shell/shell.dart';
 export 'src/sources/rps_yaml.dart';
 export 'src/utils/execute.dart';
-export 'src/utils/shell_quote.dart';

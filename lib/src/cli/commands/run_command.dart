@@ -5,7 +5,6 @@ import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
 import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
-import 'package:rps/src/models/interpreter.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
@@ -28,12 +27,6 @@ class RunCommand implements Command {
     required Platform platform,
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
-
-  ShellSyntax get _shellSyntax {
-    if (executor.interpreter == WindowsInterpreter.cmd) return ShellSyntax.cmd;
-    if (_platform.isWindows) return ShellSyntax.powershell;
-    return ShellSyntax.posix;
-  }
 
   @override
   String get description =>
@@ -91,7 +84,7 @@ class RunCommand implements Command {
           basePath.last = blue(basePath.last.substring(1));
         }
         console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
-        final command = event.compile(syntax: _shellSyntax);
+        final command = event.compile(shell: executor.shell);
         console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
         if (dryRun) continue;
         final exitCode = await executor.execute(command);
