@@ -159,12 +159,12 @@ class _ScriptParser implements ScriptsParser {
     final current = context.current;
 
     if (current == null) {
-      throw RpsException(
+      throw RpsUsageException(
         'Missing script. Command: "${context.basePath.join(' ')}" not found.',
       );
     } else if (current is String) {
       if (context.isRoot) {
-        throw RpsException(
+        throw RpsConfigException(
           'The root key "scripts" cannot contain commands.',
         );
       } else {
@@ -190,7 +190,7 @@ class _ScriptParser implements ScriptsParser {
             final command =
                 script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
             if (command is! String) {
-              throw RpsException(
+              throw RpsConfigException(
                 'No platform script key for the command: "${context.path.join(' ')}". '
                 'Consider adding the key for the current '
                 'platform: "$platformKey" or the default script '
@@ -207,7 +207,7 @@ class _ScriptParser implements ScriptsParser {
         } else {
           final nextKey = arguments.firstOrNull;
           if (nextKey == null) {
-            throw RpsException(
+            throw RpsUsageException(
               'Missing script. Command: "${context.path}" '
               'is not a full path.',
             );
@@ -221,7 +221,7 @@ class _ScriptParser implements ScriptsParser {
         }
       });
     } else {
-      throw RpsException(
+      throw RpsConfigException(
         'Invalid command. Cannot use type '
         '${current.runtimeType} ($current) as a command.',
       );

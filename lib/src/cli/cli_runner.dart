@@ -99,10 +99,13 @@ Future<int> runCli(
     return 0;
   } on RpsException catch (err) {
     errors.writeln('${boldRed('Error!')} ${err.message}');
-    return 1;
+    if (err is RpsUsageException) {
+      errors.writeln('Run "rps ls" to see the available scripts.');
+    }
+    return err.exitCode;
   } on ScriptParserException catch (err) {
     errors.writeln('${boldRed('Error!')} ${err.message}');
-    return 1;
+    return 78;
   } on CliException catch (err) {
     errors.writeln('${boldRed('Error!')} ${err.message}');
     return err.exitCode;

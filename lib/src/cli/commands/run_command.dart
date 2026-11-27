@@ -75,11 +75,11 @@ class RunCommand implements Command {
     try {
       events = _resolve(parser, arguments);
     } on ScriptParserException catch (err) {
-      throw RpsException(err.message, err);
+      throw RpsConfigException(err.message, err);
     }
 
     if (events.isEmpty) {
-      throw RpsException(
+      throw RpsUsageException(
         'Missing script. Command: "${arguments.join(' ')}".',
       );
     }

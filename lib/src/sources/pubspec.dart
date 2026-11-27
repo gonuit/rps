@@ -24,7 +24,7 @@ class Pubspec implements ScriptsSource {
     final pubspecPath = p.join(directoryPath, filename);
 
     if (!fs.fileExists(pubspecPath)) {
-      throw RpsException(
+      throw RpsConfigException(
         'Cannot find $filename file in the current directory '
         '($directoryPath).',
       );
@@ -36,7 +36,7 @@ class Pubspec implements ScriptsSource {
 
       return Pubspec._(directoryPath, parsed);
     } on Exception catch (err, st) {
-      throw RpsException('Pubspec file cannot be parsed', err, st);
+      throw RpsConfigException('Pubspec file cannot be parsed', err, st);
     }
   }
 
@@ -50,7 +50,8 @@ class Pubspec implements ScriptsSource {
   dynamic getScripts() {
     dynamic scripts = parsed['scripts'];
     if (scripts == null) {
-      throw RpsException('Missing "scripts" field in the $filename file.');
+      throw RpsConfigException(
+          'Missing "scripts" field in the $filename file.');
     }
     return scripts;
   }

@@ -58,7 +58,7 @@ class WindowsConfig {
             ? WindowsInterpreter.powershell
             : WindowsInterpreter.values.firstWhere(
                 (i) => i.value == json['interpreter'],
-                orElse: () => throw RpsException(
+                orElse: () => throw RpsConfigException(
                   'Provided Windows interpreter (${json['interpreter']}) '
                   'is not supported. '
                   'Supported values are: '
@@ -84,7 +84,7 @@ class UnixConfig {
             ? UnixInterpreter.bash
             : UnixInterpreter.values.firstWhere(
                 (i) => i.value == json['interpreter'],
-                orElse: () => throw RpsException(
+                orElse: () => throw RpsConfigException(
                   'Provided Unix interpreter (${json['interpreter']}) is not '
                   'supported. '
                   'Supported values are: '

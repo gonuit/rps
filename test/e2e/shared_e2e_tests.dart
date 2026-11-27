@@ -131,17 +131,18 @@ void sharedE2eTests(RpsRunner run) {
       expect(output, contains('flutter run'));
     });
 
-    test('nonexistent script fails with exit code 1', () async {
+    test('nonexistent script fails with exit code 64', () async {
       final result = await run(['nonexistent']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Error!'));
+      expect(stripAnsi(result.stderr), contains('Run "rps ls"'));
     });
 
     test('nonexistent nested script fails without running hooks', () async {
       final result = await run(['build', 'nonexistent']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Missing script'));
       expect(stripAnsi(result.stdout), isNot(contains('flutter pub get')));
     });
@@ -201,7 +202,7 @@ void sharedE2eTests(RpsRunner run) {
     test('incomplete nested path fails', () async {
       final result = await run(['build', 'android']);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(stripAnsi(result.stderr), contains('Error!'));
     });
   });
@@ -282,6 +283,13 @@ void sharedE2eTests(RpsRunner run) {
       );
     });
 
+    test('missing positional argument fails with exit code 64', () async {
+      final result = await run(['target']);
+
+      expect(result.exitCode, equals(64));
+      expect(stripAnsi(result.stderr), contains('positional argument'));
+    });
+
     test('different positional arg value', () async {
       final result = await run(['target', 'appbundle']);
 
@@ -333,10 +341,10 @@ void sharedE2eTests(RpsRunner run) {
   });
 
   group('CI mode', () {
-    test('no args fails with exit code 1', () async {
+    test('no args fails with exit code 64', () async {
       final result = await run([], ci: true);
 
-      expect(result.exitCode, equals(1));
+      expect(result.exitCode, equals(64));
       expect(
         stripAnsi(result.stderr),
         contains('No command has been matched'),

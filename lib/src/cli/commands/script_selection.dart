@@ -61,7 +61,7 @@ class ScriptSelectionCommand implements Command {
     console.writeln('${boldGreen(r'$')} ${bold(selected.command)}\n');
 
     if (selected.errors.isNotEmpty) {
-      throw RpsException(selected.errors.join('\n'));
+      throw RpsConfigException(selected.errors.join('\n'));
     }
     final parameters = selected.commandArguments;
     final arguments = List.filled(parameters.length, '');

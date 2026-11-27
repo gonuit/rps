@@ -1,7 +1,6 @@
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import '../mocks/fake_platform.dart';
 import '../mocks/fake_rps_package.dart';
 import 'package:test/test.dart';
@@ -36,7 +35,7 @@ void main() {
   });
 
   group('Cli', () {
-    test('throws CliException when no command matches and no fallback', () {
+    test('throws a usage error when no command matches and no fallback', () {
       final cli = Cli(
         package: createFakeRpsPackage(),
         console: console,
@@ -53,7 +52,7 @@ void main() {
 
       expect(
         () => cli.run([]),
-        throwsA(isA<CliException>()),
+        throwsA(isA<RpsUsageException>()),
       );
     });
 

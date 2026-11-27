@@ -2,7 +2,6 @@ import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
 import 'package:rps/src/cli/commands/command.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/utils/rps_package.dart';
 
 /// The main CLI entry point that routes arguments to commands and options.
@@ -48,7 +47,7 @@ class Cli {
       if (fallback != null) {
         return await fallback!.run(this, console, arguments);
       }
-      throw CliException('No command has been matched.');
+      throw RpsUsageException('No command has been matched.');
     } catch (_) {
       await console.flush();
       rethrow;
