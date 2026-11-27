@@ -95,20 +95,7 @@ class _ScriptParser implements ScriptsParser {
       context = _child(context, 'run', node);
     }
 
-    final events = <ExecutionEvent>{};
-    for (final event in _resolve(root, node, context, arguments)) {
-      final added = events.add(event);
-      if (!added) {
-        throw RpsConfigException(
-          'Script cycle detected: ${[
-            ...events.map((e) => e.path),
-            event.path
-          ].join(' → ')}',
-        );
-      }
-    }
-
-    return events.toList();
+    return _resolve(root, node, context, arguments, const []).toList();
   }
 
   Iterable<ExecutionEvent> _resolve(
@@ -116,6 +103,7 @@ class _ScriptParser implements ScriptsParser {
     ScriptNode? node,
     Context context,
     List<String> arguments,
+    List<String> stack,
   ) sync* {
     if (node == null) {
       throw RpsUsageException(
@@ -123,7 +111,14 @@ class _ScriptParser implements ScriptsParser {
       );
     }
 
-    yield* _hook(root, context, node.before, ScriptsParser.beforeKey, 'before');
+    yield* _hook(
+      root,
+      context,
+      node.before,
+      ScriptsParser.beforeKey,
+      'before',
+      stack,
+    );
 
     switch (node) {
       case Script():
@@ -134,6 +129,7 @@ class _ScriptParser implements ScriptsParser {
           context: context,
           command: node.command,
           arguments: arguments,
+          stack: _enter(stack, context.basePath.join(' ')),
         );
       case ScriptGroup():
         final nextKey = arguments.firstOrNull;
@@ -149,10 +145,18 @@ class _ScriptParser implements ScriptsParser {
           child,
           _child(context, nextKey, child),
           arguments.skip(1).toList(),
+          stack,
         );
     }
 
-    yield* _hook(root, context, node.after, ScriptsParser.afterKey, 'after');
+    yield* _hook(
+      root,
+      context,
+      node.after,
+      ScriptsParser.afterKey,
+      'after',
+      stack,
+    );
   }
 
   Iterable<ExecutionEvent> _hook(
@@ -161,6 +165,7 @@ class _ScriptParser implements ScriptsParser {
     String? command,
     String key,
     String name,
+    List<String> stack,
   ) sync* {
     if (command == null) return;
     final hookContext = _child(context, key, null);
@@ -171,13 +176,24 @@ class _ScriptParser implements ScriptsParser {
       context: hookContext,
       command: command,
       isHook: true,
+      stack: _enter(stack, hookContext.basePath.join(' ')),
     );
+  }
+
+  List<String> _enter(List<String> stack, String path) {
+    if (stack.contains(path)) {
+      throw RpsConfigException(
+        'Script cycle detected: ${[...stack, path].join(' → ')}',
+      );
+    }
+    return [...stack, path];
   }
 
   Iterable<ExecutionEvent> _command(
     ScriptNode root, {
     required Context context,
     required String command,
+    required List<String> stack,
     List<String>? arguments,
     bool isHook = false,
   }) sync* {
@@ -208,6 +224,7 @@ class _ScriptParser implements ScriptsParser {
         ...referencedCommand.split(RegExp(r'\s+')),
         ...?arguments,
       ],
+      stack,
     );
   }
 }

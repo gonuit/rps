@@ -272,6 +272,55 @@ scripts:
       );
     });
 
+    test('detects a cycle through a hook', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  a:
+    $before: rps a
+    $script: echo a
+  build:
+    $before: rps check
+    apk: echo apk
+  check: rps build apk
+'''),
+        platform: const FakePlatform(),
+      );
+
+      expect(
+        () => parser.getCommandsToExecute(['a']),
+        throwsA(isA<RpsConfigException>().having(
+          (e) => e.message,
+          'message',
+          equals(r'Script cycle detected: a $before → a $before'),
+        )),
+      );
+      expect(
+        () => parser.getCommandsToExecute(['build', 'apk']),
+        throwsA(isA<RpsConfigException>()),
+      );
+    });
+
+    test('allows a script to be referenced more than once', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  clean: echo clean
+  build:
+    $before: rps clean
+    $script: echo build
+    $after: rps clean
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final commands = parser
+          .getCommandsToExecute(['build'])
+          .whereType<CommandExecuted>()
+          .map((e) => e.command);
+      expect(commands, equals(['echo clean', 'echo build', 'echo clean']));
+    });
+
     test('defaults to run when no arguments', () {
       final scripts = r'''
 name: test
