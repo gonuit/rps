@@ -45,99 +45,58 @@ abstract class ScriptsParser {
 
 class _ScriptParser implements ScriptsParser {
   final ScriptsSource _source;
-  final Platform _platform;
+  final ScriptsAnalyzer _analyzer;
 
   _ScriptParser({
     required ScriptsSource source,
     required Platform platform,
   })  : _source = source,
-        _platform = platform;
+        _analyzer = ScriptsAnalyzer(platform: platform);
+
+  ScriptNode _analyze() => _analyzer.analyze(_source.getScripts());
+
+  Context _child(Context context, String key, ScriptNode? node) {
+    return Context(key: key, parent: context, current: node, isBase: false);
+  }
 
   @override
   List<CommandExecuted> listCommands() {
-    var scripts = _source.getScripts();
-    final context = Context.root(scripts);
-    return _listCommands(context: context).toList();
+    final root = _analyze();
+    return _listCommands(root, Context.root(root)).toList();
   }
 
-  Iterable<CommandExecuted> _listCommands({
-    required Context context,
-  }) sync* {
-    final current = context.current;
-
-    if (current is String) {
-      if (context.isRoot) {
-        // Root-level string values aren't commands; skip.
-      } else if (context.key == ScriptsParser.scriptKey ||
-          (context.key != null && !ScriptsParser.isSpecialKey(context.key!))) {
+  Iterable<CommandExecuted> _listCommands(
+    ScriptNode node,
+    Context context,
+  ) sync* {
+    switch (node) {
+      case Script():
         yield CommandExecuted(
-          command: current,
+          command: node.command,
           context: context,
+          description: node.description,
+          errors: [if (node.error != null) node.error!],
         );
-      }
-    } else if (current is Map) {
-      if (_hasScriptKey(current)) {
-        final script = current[ScriptsParser.scriptKey];
-        final description = current[ScriptsParser.descriptionKey];
-        if (script is String) {
-          yield CommandExecuted(
-            command: script,
-            context: context,
-            description: description,
-          );
-        } else if (script is Map) {
-          final platformKey = '\$${_platform.operatingSystem}';
-          final command =
-              script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
-          if (command is! String) {
-            yield CommandExecuted(
-              command: '-',
-              context: context,
-              description: description,
-              errors: [
-                'No platform script key for the command: "${context.path.join(' ')}". '
-                    'Consider adding the key for the current '
-                    'platform: "$platformKey" or the default script '
-                    'key: "${ScriptsParser.defaultScriptKey}".',
-              ],
-            );
-          } else {
-            yield CommandExecuted(
-              command: command,
-              context: context,
-              description: description,
-            );
-          }
+      case ScriptGroup():
+        for (final MapEntry(:key, :value) in node.children.entries) {
+          yield* _listCommands(value, _child(context, key, value));
         }
-      } else {
-        for (final key in current.keys) {
-          yield* _listCommands(context: context.next(key));
-        }
-      }
-    } else {
-      yield CommandExecuted(
-        command: current.toString(),
-        context: context,
-        errors: [
-          'Invalid command. Cannot use type '
-              '${current.runtimeType} ($current) as a command.',
-        ],
-      );
     }
   }
 
   @override
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments) {
-    var scripts = _source.getScripts();
-    var context = Context.root(scripts);
+    final root = _analyze();
+    var context = Context.root(root);
+    ScriptNode? node = root;
     // If command is not specified, fallback to run
     if (arguments.isEmpty) {
-      context = context.next('run');
+      node = root is ScriptGroup ? root.children['run'] : null;
+      context = _child(context, 'run', node);
     }
 
     final events = <ExecutionEvent>{};
-    for (final event
-        in _getCommandsToExecute(context: context, arguments: arguments)) {
+    for (final event in _resolve(root, node, context, arguments)) {
       final added = events.add(event);
       if (!added) {
         throw RpsConfigException(
@@ -152,164 +111,103 @@ class _ScriptParser implements ScriptsParser {
     return events.toList();
   }
 
-  Iterable<ExecutionEvent> _getCommandsToExecute({
-    required Context context,
-    required List<String> arguments,
-  }) sync* {
-    final current = context.current;
-
-    if (current == null) {
+  Iterable<ExecutionEvent> _resolve(
+    ScriptNode root,
+    ScriptNode? node,
+    Context context,
+    List<String> arguments,
+  ) sync* {
+    if (node == null) {
       throw RpsUsageException(
         'Missing script. Command: "${context.basePath.join(' ')}" not found.',
       );
-    } else if (current is String) {
-      if (context.isRoot) {
-        throw RpsConfigException(
-          'The root key "scripts" cannot contain commands.',
-        );
-      } else {
-        yield* _handleCommand(
-          command: current,
+    }
+
+    yield* _hook(root, context, node.before, ScriptsParser.beforeKey, 'before');
+
+    switch (node) {
+      case Script():
+        final error = node.error;
+        if (error != null) throw RpsConfigException(error);
+        yield* _command(
+          root,
           context: context,
+          command: node.command,
           arguments: arguments,
         );
-      }
-    } else if (current is Map) {
-      // if it is a Map, it may contain hooks.
-      yield* _handleHooks(context, () sync* {
-        if (_hasScriptKey(current)) {
-          final script = current[ScriptsParser.scriptKey];
-          if (script is String) {
-            yield* _handleCommand(
-              command: script,
-              context: context,
-              arguments: arguments,
-            );
-          } else if (script is Map) {
-            final platformKey = '\$${_platform.operatingSystem}';
-            final command =
-                script[platformKey] ?? script[ScriptsParser.defaultScriptKey];
-            if (command is! String) {
-              throw RpsConfigException(
-                'No platform script key for the command: "${context.path.join(' ')}". '
-                'Consider adding the key for the current '
-                'platform: "$platformKey" or the default script '
-                'key: "${ScriptsParser.defaultScriptKey}".',
-              );
-            } else {
-              yield* _handleCommand(
-                command: command,
-                context: context,
-                arguments: arguments,
-              );
-            }
-          }
-        } else {
-          final nextKey = arguments.firstOrNull;
-          if (nextKey == null) {
-            throw RpsUsageException(
-              'Missing script. Command: "${context.path}" '
-              'is not a full path.',
-            );
-          } else {
-            final remainingArguments = arguments.skip(1).toList();
-            yield* _getCommandsToExecute(
-              context: context.next(nextKey),
-              arguments: remainingArguments,
-            );
-          }
+      case ScriptGroup():
+        final nextKey = arguments.firstOrNull;
+        if (nextKey == null) {
+          throw RpsUsageException(
+            'Missing script. Command: "${context.path}" '
+            'is not a full path.',
+          );
         }
-      });
-    } else {
-      throw RpsConfigException(
-        'Invalid command. Cannot use type '
-        '${current.runtimeType} ($current) as a command.',
-      );
+        final child = node.children[nextKey];
+        yield* _resolve(
+          root,
+          child,
+          _child(context, nextKey, child),
+          arguments.skip(1).toList(),
+        );
     }
+
+    yield* _hook(root, context, node.after, ScriptsParser.afterKey, 'after');
   }
 
-  Iterable<ExecutionEvent> _handleHooks(
+  Iterable<ExecutionEvent> _hook(
+    ScriptNode root,
     Context context,
-    Iterable<ExecutionEvent> Function() handler,
+    String? command,
+    String key,
+    String name,
   ) sync* {
-    final current = context.current;
-    final beforeHook = current[ScriptsParser.beforeKey];
-    if (beforeHook is String) {
-      final hookContext = context.next(ScriptsParser.beforeKey);
-      yield HookExecuted(
-        command: beforeHook,
-        context: hookContext,
-        name: 'before',
-      );
-      yield* _handleCommand(
-        isHook: true,
-        command: beforeHook,
-        context: hookContext,
-        // arguments are not passed to the hooks
-        arguments: null,
-      );
-    }
-
-    yield* handler();
-
-    final afterHook = current[ScriptsParser.afterKey];
-    if (afterHook is String) {
-      final hookContext = context.next(ScriptsParser.afterKey);
-      yield HookExecuted(
-        command: afterHook,
-        context: hookContext,
-        name: 'after',
-      );
-      yield* _handleCommand(
-        command: afterHook,
-        context: hookContext,
-        // arguments are not passed to the hooks
-        arguments: null,
-        isHook: true,
-      );
-    }
+    if (command == null) return;
+    final hookContext = _child(context, key, null);
+    yield HookExecuted(command: command, context: hookContext, name: name);
+    // arguments are not passed to the hooks
+    yield* _command(
+      root,
+      context: hookContext,
+      command: command,
+      isHook: true,
+    );
   }
 
-  Iterable<ExecutionEvent> _handleCommand({
+  Iterable<ExecutionEvent> _command(
+    ScriptNode root, {
     required Context context,
     required String command,
     List<String>? arguments,
     bool isHook = false,
   }) sync* {
-    if (command.startsWith(r'rps ')) {
-      final referencedCommand = command.substring(4).trim();
-
-      yield CommandReferenced(
-        command: referencedCommand,
-        context: context,
-        label: context.key!,
-        isHook: isHook,
-      );
-
-      // Ref should start from root.
-      yield* _getCommandsToExecute(
-        context: Context(
-          key: null,
-          parent: context,
-          isBase: true,
-          current: context.root.current,
-        ),
-        arguments: [
-          ...referencedCommand.split(RegExp(r'\s+')),
-          ...?arguments,
-        ],
-      );
-    } else {
+    if (!command.startsWith(r'rps ')) {
       yield CommandExecuted(
         command: command,
         context: context,
         arguments: arguments,
         isHook: isHook,
       );
+      return;
     }
-  }
 
-  bool _hasScriptKey(Map scripts) {
-    return scripts.containsKey(ScriptsParser.scriptKey);
+    final referencedCommand = command.substring(4).trim();
+    yield CommandReferenced(
+      command: referencedCommand,
+      context: context,
+      label: context.key!,
+      isHook: isHook,
+    );
+
+    // Ref should start from root.
+    yield* _resolve(
+      root,
+      root,
+      Context(key: null, parent: context, isBase: true, current: root),
+      [
+        ...referencedCommand.split(RegExp(r'\s+')),
+        ...?arguments,
+      ],
+    );
   }
 }
