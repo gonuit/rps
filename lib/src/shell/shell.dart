@@ -76,7 +76,7 @@ class PowerShell extends Shell {
 
   @override
   String quote(String argument) {
-    if (argument.isEmpty) return "''";
+    if (argument.isEmpty) return "'\"\"'";
     if (_safe.hasMatch(argument)) return argument;
     final escaped = argument.replaceAll("'", "''").replaceAll('"', r'\"');
     return "'$escaped'";

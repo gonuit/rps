@@ -41,8 +41,8 @@ void main() {
       expect(quote(r'lib\main.dart'), r'lib\main.dart');
     });
 
-    test('quotes empty argument', () {
-      expect(quote(''), "''");
+    test('passes an empty argument as a pair of double quotes', () {
+      expect(quote(''), """'""'""");
     });
 
     test('quotes spaces and metacharacters', () {
