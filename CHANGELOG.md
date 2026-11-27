@@ -1,4 +1,4 @@
-## 0.12.0
+## 0.12.0-beta.1
 - Colors are used only when the output is a terminal. They are also disabled by the `NO_COLOR` environment variable, `TERM=dumb` and the new `--no-color` flag.
   - Output piped to a file or another program no longer contains color codes.
 - The update notice and its one second pause appear only when the output is a terminal. Set `RPS_NO_UPDATE_CHECK=1` to turn the update check off.
