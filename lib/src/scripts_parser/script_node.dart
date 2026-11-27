@@ -6,8 +6,11 @@ sealed class ScriptNode {
   /// Command of the `$after` hook, if any.
   final String? after;
 
+  /// The reason nothing under this node can be run, if any.
+  final String? error;
+
   /// Creates a [ScriptNode].
-  const ScriptNode({this.before, this.after});
+  const ScriptNode({this.before, this.after, this.error});
 }
 
 /// A group of scripts.
@@ -16,7 +19,12 @@ class ScriptGroup extends ScriptNode {
   final Map<String, ScriptNode> children;
 
   /// Creates a [ScriptGroup].
-  const ScriptGroup({required this.children, super.before, super.after});
+  const ScriptGroup({
+    required this.children,
+    super.before,
+    super.after,
+    super.error,
+  });
 }
 
 /// A script that can be run.
@@ -27,14 +35,11 @@ class Script extends ScriptNode {
   /// Optional human-readable description.
   final String? description;
 
-  /// The reason this script cannot be run, if any.
-  final String? error;
-
   /// Creates a [Script].
   const Script({
     required this.command,
     this.description,
-    this.error,
+    super.error,
     super.before,
     super.after,
   });

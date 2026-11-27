@@ -120,6 +120,26 @@ scripted:
       );
     });
 
+    test('reports unknown special keys', () {
+      final root = _analyze(r'''
+build:
+  $skript: echo build
+  apk: echo apk
+test:
+  $script: dart test
+  $descripton: Runs tests
+  $after: echo done
+''') as ScriptGroup;
+      final build = root.children['build'] as ScriptGroup;
+
+      expect(build.error, equals(r'Unknown key: "$skript".'));
+      expect(build.children.keys, equals(['apk']));
+      expect(
+        root.children['test']!.error,
+        equals(r'Unknown key: "$descripton".'),
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

@@ -29,14 +29,22 @@ class ScriptsAnalyzer {
 
     final before = _string(value[ScriptsParser.beforeKey]);
     final after = _string(value[ScriptsParser.afterKey]);
+    final unknownKeys = value.keys
+        .map((key) => '$key')
+        .where((key) => key.startsWith(r'$'))
+        .where((key) => !ScriptsParser.isSpecialKey(key));
+    final unknownKeysError = unknownKeys.isEmpty
+        ? null
+        : 'Unknown key: ${unknownKeys.map((key) => '"$key"').join(', ')}.';
 
     if (!value.containsKey(ScriptsParser.scriptKey)) {
       return ScriptGroup(
         before: before,
         after: after,
+        error: unknownKeysError,
         children: {
           for (final key in value.keys)
-            if (!ScriptsParser.isSpecialKey('$key'))
+            if (!'$key'.startsWith(r'$'))
               '$key': _node(value[key], [...path, '$key']),
         },
       );
@@ -48,6 +56,7 @@ class ScriptsAnalyzer {
       return Script(
         command: script,
         description: description,
+        error: unknownKeysError,
         before: before,
         after: after,
       );
@@ -69,6 +78,7 @@ class ScriptsAnalyzer {
       return Script(
         command: command,
         description: description,
+        error: unknownKeysError,
         before: before,
         after: after,
       );

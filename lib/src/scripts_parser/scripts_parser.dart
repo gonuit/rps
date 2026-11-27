@@ -62,24 +62,26 @@ class _ScriptParser implements ScriptsParser {
   @override
   List<CommandExecuted> listCommands() {
     final root = _analyze();
-    return _listCommands(root, Context.root(root)).toList();
+    return _listCommands(root, Context.root(root), const []).toList();
   }
 
   Iterable<CommandExecuted> _listCommands(
     ScriptNode node,
     Context context,
+    List<String> inheritedErrors,
   ) sync* {
+    final errors = [...inheritedErrors, if (node.error != null) node.error!];
     switch (node) {
       case Script():
         yield CommandExecuted(
           command: node.command,
           context: context,
           description: node.description,
-          errors: [if (node.error != null) node.error!],
+          errors: errors,
         );
       case ScriptGroup():
         for (final MapEntry(:key, :value) in node.children.entries) {
-          yield* _listCommands(value, _child(context, key, value));
+          yield* _listCommands(value, _child(context, key, value), errors);
         }
     }
   }
@@ -110,6 +112,8 @@ class _ScriptParser implements ScriptsParser {
         'Missing script. Command: "${context.basePath.join(' ')}" not found.',
       );
     }
+    final error = node.error;
+    if (error != null) throw RpsConfigException(error);
 
     yield* _hook(
       root,
@@ -122,8 +126,6 @@ class _ScriptParser implements ScriptsParser {
 
     switch (node) {
       case Script():
-        final error = node.error;
-        if (error != null) throw RpsConfigException(error);
         yield* _command(
           root,
           context: context,

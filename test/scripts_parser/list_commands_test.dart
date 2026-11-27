@@ -272,6 +272,28 @@ scripts:
       );
     });
 
+    test('scripts inherit the error of their group', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  build:
+    $befor: echo typo
+    apk: echo apk
+  ok: echo ok
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final commands = parser.listCommands();
+      expect(commands.first.errors, equals([r'Unknown key: "$befor".']));
+      expect(commands.last.errors, isEmpty);
+      expect(
+        () => parser.getCommandsToExecute(['build', 'apk']),
+        throwsA(isA<RpsConfigException>()),
+      );
+      expect(parser.getCommandsToExecute(['ok']), hasLength(1));
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''
