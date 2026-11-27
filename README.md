@@ -39,7 +39,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
     # you can also provide additional arguments
     rps gen --verbose
     ```
-4. Safe a time and become a power user! 😈
+4. Save time and become a power user! 😈
     
     Less time typing long commands more time watching funny cats. 🐈
 

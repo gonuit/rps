@@ -10,6 +10,10 @@
 - A key that starts with `$` and is not known to rps, such as a misspelled `$descripton`, is now reported as an error instead of being ignored or treated as a script.
 - A reference can be used more than once in the hooks of one script.
 - `rps ls | head` and similar no longer end with a stack trace when the reader closes the output.
+- A termination signal sent to rps now also reaches the programs started by the script, not only its shell.
+- The minimum Dart SDK is declared as 3.3. Older versions could not install rps already, because of its dependencies.
+- Removed the dependency on the `prompts` package.
+- **Breaking** for users of the Dart API: `ScriptsParser.listCommands` returns `ScriptInfo`, `RunCommand` and `ScriptSelectionCommand` take a `ScriptRunner`, `CommandExecuted.getScriptArguments` is now `PositionalArgument.parse`, and `HookExecuted`, `CommandReferenced.label`, the `verbose` option of `execute` and unused members of `Context` are removed.
 
 ## 0.12.0
 - Colors are used only when the output is a terminal. They are also disabled by the `NO_COLOR` environment variable, `TERM=dumb` and the new `--no-color` flag.
