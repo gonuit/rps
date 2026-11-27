@@ -5,7 +5,6 @@ import 'package:rps/src/cli/cli_options/upgrade.dart';
 import 'package:rps/src/cli/cli_options/version.dart';
 import 'package:rps/src/cli/commands/list.dart';
 import 'package:rps/src/cli/commands/script_selection.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/cli/global_flags.dart';
 import 'package:rps/src/models/rps_yaml_data.dart';
@@ -101,14 +100,8 @@ Future<int> runCli(
       errors.writeln('Run "rps ls" to see the available scripts.');
     }
     return err.exitCode;
-  } on ScriptParserException catch (err) {
-    errors.writeln('${boldRed('Error!')} ${err.message}');
-    return 78;
-  } on CliException catch (err) {
-    errors.writeln('${boldRed('Error!')} ${err.message}');
-    return err.exitCode;
   } catch (err) {
     errors.writeln('${boldRed('Error!')} $err');
-    return 1;
+    return ExitCodes.error;
   }
 }

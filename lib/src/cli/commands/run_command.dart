@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/cli/executor.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
@@ -64,12 +63,7 @@ class RunCommand implements Command {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
 
-    final List<ExecutionEvent> events;
-    try {
-      events = _resolve(parser, arguments);
-    } on ScriptParserException catch (err) {
-      throw RpsConfigException(err.message, err);
-    }
+    final events = _resolve(parser, arguments);
 
     if (events.isEmpty) {
       throw RpsUsageException(
@@ -90,7 +84,7 @@ class RunCommand implements Command {
         final exitCode = await executor.execute(command);
 
         if (exitCode != 0) {
-          throw CliException(
+          throw ScriptFailedException(
             'Command ended with a non zero exit code ($exitCode).',
             exitCode: exitCode,
           );

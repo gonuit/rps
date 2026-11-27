@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/cli.dart';
 import 'package:rps/src/cli/cli_options/cli_option.dart';
-import 'package:rps/src/cli/exceptions/cli_exception.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The --upgrade / -u option that updates rps to the latest version.
@@ -35,7 +34,7 @@ class UpgradeOption extends CliOption {
       shell: Shell.of(null, _platform),
     );
     if (exitCode != 0) {
-      throw CliException(
+      throw ScriptFailedException(
         'Failed to update the rps package. '
         'Command ended with a non zero exit code.',
         exitCode: exitCode,

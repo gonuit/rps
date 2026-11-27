@@ -140,7 +140,7 @@ class _ScriptParser implements ScriptsParser {
         in _getCommandsToExecute(context: context, arguments: arguments)) {
       final added = events.add(event);
       if (!added) {
-        throw ScriptParserException(
+        throw RpsConfigException(
           'Script cycle detected: ${[
             ...events.map((e) => e.path),
             event.path

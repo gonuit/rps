@@ -19,7 +19,7 @@ abstract interface class Command {
   ///   - arguments: A list of command-line arguments.
   bool match(List<String> arguments);
 
-  /// Executes the command. Throws [CliException] with a specific
+  /// Executes the command. Throws [RpsException] with a specific
   /// [exitCode] on failure; returns normally on success.
   Future<void> run(Console console, List<String> arguments);
 }
