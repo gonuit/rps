@@ -293,7 +293,7 @@ rps checks for a new version once a day and shows a notice when one is available
 | Code  | Meaning                                                                                                                                        |
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `0`   | Success.                                                                                                                                       |
-| `64`  | The script does not exist, the path is incomplete, or a positional argument is missing.                                                         |
+| `64`  | The script does not exist, the path is incomplete, a positional argument is missing, or an option is unknown.                                   |
 | `78`  | Configuration problem: `pubspec.yaml` or `rps.yaml` is missing or invalid, there is no `scripts` key, or a script is defined incorrectly.       |
 | `1`   | Any other rps error.                                                                                                                           |
 | other | The exit code of the failed script or hook, passed through unchanged.                                                                          |

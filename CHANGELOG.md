@@ -13,7 +13,12 @@
   - rps now exits with the exit code of the interrupted script, usually `130`, instead of `137`.
 - A termination signal sent to rps is passed on to the running script.
 - A missing interpreter is reported with a clear error.
-- **Breaking** for users of the Dart API: removed the `ExecuteNative` and `Execute` types and the `fs` parameter of `execute`.
+- **Breaking**: removed the `cmd` interpreter. Scripts on Windows always run in PowerShell, and `interpreter: cmd` in `rps.yaml` is now a configuration error.
+- Fixed empty arguments being dropped when passed to a script on Windows.
+- An unknown option before the script name, such as `rps --foo build`, is now an error instead of being treated as a script name.
+  - `rps ls` also rejects unknown options instead of ignoring them.
+- The help text lists all options and shows the usage.
+- **Breaking** for users of the Dart API: removed `ExecuteNative`, `Execute`, `ShellSyntax`, `quoteArgument`, `ScriptParserException` and `RunCommand.match`. `execute` and `CommandExecuted.compile` take a `Shell`.
 
 ## 0.11.0
 - Skip update check and interactive selection in CI environments.
