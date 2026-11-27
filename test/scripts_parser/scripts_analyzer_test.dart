@@ -215,6 +215,58 @@ c:
       );
     });
 
+    test(r'reads $steps as a script', () {
+      final root = _analyze(r'''
+check:
+  $description: Checks the code
+  $steps:
+    - dart format .
+    - rps analyze
+    - $default: rm -rf build
+      $windows: rd /s /q build
+''', platform: const FakePlatform.windows()) as ScriptGroup;
+      final check = root.children['check'] as Script;
+
+      expect(
+        check.steps,
+        equals(['dart format .', 'rps analyze', 'rd /s /q build']),
+      );
+      expect(check.command, 'dart format .\nrps analyze\nrd /s /q build');
+      expect(check.description, equals('Checks the code'));
+      expect(check.error, isNull);
+    });
+
+    test(r'reports invalid $steps', () {
+      final root = _analyze(r'''
+both:
+  $script: echo a
+  $steps: [echo b]
+text:
+  $steps: echo a
+empty:
+  $steps: []
+number:
+  $steps: [echo a, 5]
+''') as ScriptGroup;
+
+      expect(
+        root.children['both']!.error,
+        r'Use either "$script" or "$steps", not both.',
+      );
+      expect(
+        root.children['text']!.error,
+        r'The "$steps" key must be a list of commands.',
+      );
+      expect(
+        root.children['empty']!.error,
+        r'The "$steps" key must be a list of commands.',
+      );
+      expect(
+        root.children['number']!.error,
+        'Invalid command. Cannot use type int (5) as a command.',
+      );
+    });
+
     test('ignores special keys that are not strings', () {
       final root = _analyze(r'''
 build:

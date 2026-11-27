@@ -19,6 +19,9 @@ abstract class ScriptsParser {
   /// Key for the default platform script entry.
   static const defaultScriptKey = r'$default';
 
+  /// Key for the entry with commands run one after another.
+  static const stepsKey = r'$steps';
+
   /// Key for the working directory entry.
   static const cwdKey = r'$cwd';
 
@@ -35,6 +38,7 @@ abstract class ScriptsParser {
         afterKey ||
         descriptionKey ||
         defaultScriptKey ||
+        stepsKey ||
         cwdKey ||
         envKey ||
         envFileKey =>
@@ -171,14 +175,31 @@ class _ScriptParser implements ScriptsParser {
 
     switch (node) {
       case Script():
-        yield* _command(
-          root,
-          context: context,
-          command: node.command,
-          arguments: arguments,
-          stack: _enter(stack, context.basePath.join(' ')),
-          scope: scope,
-        );
+        final entered = _enter(stack, context.basePath.join(' '));
+        final steps = node.steps;
+        if (steps == null) {
+          yield* _command(
+            root,
+            context: context,
+            command: node.command,
+            arguments: arguments,
+            stack: entered,
+            scope: scope,
+          );
+        } else {
+          _checkArguments(node, context, arguments);
+          for (final (index, step) in steps.indexed) {
+            yield* _command(
+              root,
+              context: context,
+              command: step,
+              arguments: arguments,
+              stack: entered,
+              scope: scope,
+              step: (index + 1, steps.length),
+            );
+          }
+        }
       case ScriptGroup():
         final nextKey = arguments.firstOrNull;
         if (nextKey == null) {
@@ -232,6 +253,32 @@ class _ScriptParser implements ScriptsParser {
     );
   }
 
+  void _checkArguments(Script script, Context context, List<String> arguments) {
+    final expected = CommandExecuted.getScriptArguments(script.command).length;
+    if (arguments.length <= expected) return;
+    throw RpsUsageException(
+      'The script "${context.basePath.join(' ')}" runs several commands, '
+      'so it does not accept additional arguments: '
+      '${arguments.skip(expected).join(' ')}',
+    );
+  }
+
+  static final _placeholder = RegExp(r'\$\{\s*([0-9]+)\s*\}');
+
+  String _fill(String word, Context context, List<String> arguments) {
+    return word.replaceAllMapped(_placeholder, (match) {
+      final index = int.parse(match[1]!);
+      if (index >= arguments.length) {
+        throw RpsUsageException(
+          'The script "${context.basePath.join(' ')}" defines a positional '
+          'argument ${match[0]}, but ${arguments.length} positional '
+          'argument(s) are given.',
+        );
+      }
+      return arguments[index];
+    });
+  }
+
   List<String> _enter(List<String> stack, String path) {
     if (stack.contains(path)) {
       throw RpsConfigException(
@@ -249,6 +296,7 @@ class _ScriptParser implements ScriptsParser {
     required _Scope scope,
     List<String>? arguments,
     bool isHook = false,
+    (int, int)? step,
   }) sync* {
     if (!command.startsWith(r'rps ')) {
       yield CommandExecuted(
@@ -256,6 +304,7 @@ class _ScriptParser implements ScriptsParser {
         context: context,
         arguments: arguments,
         isHook: isHook,
+        step: step,
         workingDirectory: scope.cwd,
         environment: scope.env,
         envFiles: scope.envFiles,
@@ -269,17 +318,21 @@ class _ScriptParser implements ScriptsParser {
       context: context,
       label: context.key!,
       isHook: isHook,
+      step: step,
     );
+    final words = referencedCommand.split(RegExp(r'\s+'));
 
     // Ref should start from root.
     yield* _resolve(
       root,
       root,
       Context(key: null, parent: context, isBase: true, current: root),
-      [
-        ...referencedCommand.split(RegExp(r'\s+')),
-        ...?arguments,
-      ],
+      step == null
+          ? [...words, ...?arguments]
+          : [
+              for (final word in words)
+                _fill(word, context, arguments ?? const []),
+            ],
       stack,
       const _Scope(),
     );

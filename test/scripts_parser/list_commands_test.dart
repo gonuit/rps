@@ -373,6 +373,90 @@ scripts:
       expect(plain.envFiles, equals(['.env']));
     });
 
+    group(r'$steps', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  clean: echo clean
+  build: echo build ${0}
+  release:
+    $before: echo before
+    $steps:
+      - rps clean
+      - echo ${1}
+      - rps build ${0}
+      - rps clean
+    $after: echo after
+  gap:
+    $steps:
+      - echo ${0}
+      - echo ${2}
+'''),
+        platform: const FakePlatform(),
+      );
+
+      test('resolves steps and references in order', () {
+        final events = parser.getCommandsToExecute(['release', 'apk', 'v1']);
+        final commands = events
+            .whereType<CommandExecuted>()
+            .map((e) => (e.compile(), e.step))
+            .toList();
+
+        expect(commands, [
+          ('echo before', null),
+          ('echo clean', null),
+          ('echo v1', (2, 4)),
+          ('echo build apk', null),
+          ('echo clean', null),
+          ('echo after', null),
+        ]);
+        expect(
+          events.whereType<CommandReferenced>().map((e) => e.step),
+          equals([(1, 4), (3, 4), (4, 4)]),
+        );
+      });
+
+      test('rejects additional arguments', () {
+        expect(
+          () => parser.getCommandsToExecute(['release', 'apk', 'v1', 'more']),
+          throwsA(isA<RpsUsageException>().having(
+            (e) => e.message,
+            'message',
+            equals(
+              'The script "release" runs several commands, '
+              'so it does not accept additional arguments: more',
+            ),
+          )),
+        );
+      });
+
+      test('requires the arguments used by the steps', () {
+        expect(
+          () => parser.getCommandsToExecute(['release']),
+          throwsA(isA<RpsUsageException>()),
+        );
+        expect(
+          () => parser
+              .getCommandsToExecute(['release', 'apk'])
+              .whereType<CommandExecuted>()
+              .map((e) => e.compile())
+              .toList(),
+          throwsA(isA<RpsUsageException>()),
+        );
+      });
+
+      test('reports a gap in positional arguments', () {
+        expect(
+          parser.listCommands().last.errors.single,
+          contains(r'unused positional argument(s): ${1}'),
+        );
+        expect(
+          () => parser.getCommandsToExecute(['gap', 'a', 'b', 'c']),
+          throwsA(isA<RpsConfigException>()),
+        );
+      });
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''

@@ -16,12 +16,16 @@ class CommandReferenced extends ExecutionEvent {
   /// Whether this reference originated from a hook.
   final bool isHook;
 
+  /// Position among the steps of the script and their count, if any.
+  final (int, int)? step;
+
   /// Creates a [CommandReferenced].
   CommandReferenced({
     required this.context,
     required this.command,
     required this.label,
     this.isHook = false,
+    this.step,
   });
 
   @override

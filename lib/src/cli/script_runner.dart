@@ -38,7 +38,12 @@ class ScriptRunner {
         case CommandExecuted():
           await _execute(event);
         case CommandReferenced():
-          _header(event.context, isHook: event.isHook, directory: null);
+          _header(
+            event.context,
+            isHook: event.isHook,
+            step: event.step,
+            directory: null,
+          );
           console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
       }
     }
@@ -47,6 +52,7 @@ class ScriptRunner {
   void _header(
     Context context, {
     required bool isHook,
+    required (int, int)? step,
     required String? directory,
   }) {
     final basePath = context.basePath;
@@ -56,6 +62,7 @@ class ScriptRunner {
     console.writeln([
       boldGreen('>'),
       ...basePath,
+      if (step != null) gray('[${step.$1}/${step.$2}]'),
       if (directory != null) gray('($directory)'),
     ].join(' '));
   }
@@ -98,6 +105,7 @@ class ScriptRunner {
     _header(
       event.context,
       isHook: event.isHook,
+      step: event.step,
       directory: event.workingDirectory,
     );
     final command = event.compile(shell: executor.shell);

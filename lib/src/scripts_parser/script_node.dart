@@ -49,7 +49,12 @@ class ScriptGroup extends ScriptNode {
 /// A script that can be run.
 class Script extends ScriptNode {
   /// The command for the current platform.
+  ///
+  /// For a script with [steps] it is all of them, one per line.
   final String command;
+
+  /// Commands run one after another, when the script is a sequence.
+  final List<String>? steps;
 
   /// Optional human-readable description.
   final String? description;
@@ -57,6 +62,7 @@ class Script extends ScriptNode {
   /// Creates a [Script].
   const Script({
     required this.command,
+    this.steps,
     this.description,
     super.error,
     super.before,

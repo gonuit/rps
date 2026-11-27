@@ -51,6 +51,11 @@ class CommandExecuted extends ExecutionEvent {
   /// Whether this command is coming from hook.
   final bool isHook;
 
+  /// Position among the steps of the script and their count, if any.
+  ///
+  /// A step uses the arguments it refers to and ignores the rest.
+  final (int, int)? step;
+
   @override
   String get path => context.path.join(' ');
 
@@ -84,6 +89,7 @@ class CommandExecuted extends ExecutionEvent {
     required this.errors,
     required this.description,
     required this.isHook,
+    required this.step,
     required this.commandArguments,
     required this.workingDirectory,
     required this.environment,
@@ -97,6 +103,7 @@ class CommandExecuted extends ExecutionEvent {
     List<String>? arguments,
     String? description,
     bool isHook = false,
+    (int, int)? step,
     List<String>? errors,
     String? workingDirectory,
     Map<String, String> environment = const {},
@@ -105,7 +112,7 @@ class CommandExecuted extends ExecutionEvent {
     final errorsList = errors != null ? List<String>.of(errors) : <String>[];
     List<PositionalArgument>? scriptArguments;
     try {
-      scriptArguments = getScriptArguments(command);
+      scriptArguments = getScriptArguments(command, contiguous: step == null);
     } on RpsException catch (err) {
       errorsList.add(err.message);
       scriptArguments = const [];
@@ -119,6 +126,7 @@ class CommandExecuted extends ExecutionEvent {
       commandArguments: scriptArguments,
       description: description,
       isHook: isHook,
+      step: step,
       workingDirectory: workingDirectory,
       environment: environment,
       envFiles: envFiles,
@@ -126,7 +134,13 @@ class CommandExecuted extends ExecutionEvent {
   }
 
   /// Extracts positional argument placeholders from [command].
-  static List<PositionalArgument> getScriptArguments(String command) {
+  ///
+  /// Unless [contiguous] is disabled, the indexes must start
+  /// at 0 and have no gaps.
+  static List<PositionalArgument> getScriptArguments(
+    String command, {
+    bool contiguous = true,
+  }) {
     final argumentsInCommand = _positionalArgumentsRegexp.allMatches(command);
     final arguments = <int>{};
     for (final match in argumentsInCommand) {
@@ -144,7 +158,8 @@ class CommandExecuted extends ExecutionEvent {
 
     // Convert to list and sort ascending.
     final argumentsList = arguments.toList()..sort();
-    if (argumentsList.isNotEmpty &&
+    if (contiguous &&
+        argumentsList.isNotEmpty &&
         argumentsList.length != (argumentsList.last + 1)) {
       final allArguments = List.generate(argumentsList.last, (i) => i);
       final unusedArguments =
@@ -206,6 +221,8 @@ class CommandExecuted extends ExecutionEvent {
         },
       );
 
+      if (step != null) return filledCommand;
+
       final lastUsed = usedArguments.reduce(math.max);
       if (lastUsed >= usedArguments.length) {
         final unusedArguments = List<int>.generate(lastUsed, (index) => index)
@@ -221,6 +238,8 @@ class CommandExecuted extends ExecutionEvent {
         filledCommand,
         _serializeArguments(arguments.sublist(lastUsed + 1), shell)
       ].nonNulls.join(' ');
+    } else if (step != null) {
+      return command;
     } else {
       return [command, _serializeArguments(arguments, shell)]
           .nonNulls

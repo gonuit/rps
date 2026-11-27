@@ -57,6 +57,31 @@ void main() {
     sharedE2eTests(_runProcess);
 
     group('script keys', () {
+      test(r'$steps stop at the first step that fails', () async {
+        final result = await _runIn(
+          'name: app\nscripts:\n'
+          '  version: dart --version\n'
+          '  check:\n'
+          '    \$steps:\n'
+          '      - rps version\n'
+          '      - exit 3\n'
+          '      - dart --version > never.txt\n',
+          ['check'],
+          verify: (directory) {
+            expect(File('${directory.path}/never.txt').existsSync(), isFalse);
+          },
+        );
+        final extra = await _runIn(
+          'name: app\nscripts:\n  check:\n    \$steps: [dart --version]\n',
+          ['check', 'more'],
+        );
+
+        expect(result.exitCode, equals(3));
+        expect(result.stdout, contains('> check [2/3]'));
+        expect(result.stdout, isNot(contains('[3/3]')));
+        expect(extra.exitCode, equals(64));
+      });
+
       test(r'$cwd runs the script in the directory', () async {
         final result = await _runIn(
           'name: app\nscripts:\n'

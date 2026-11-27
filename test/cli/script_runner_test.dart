@@ -70,6 +70,38 @@ scripts:
       expect(executor.executions, equals(['echo before']));
     });
 
+    group(r'$steps', () {
+      const scripts = r'''
+scripts:
+  lint: echo lint
+  check:
+    $steps:
+      - echo format
+      - rps lint
+      - echo test
+''';
+
+      test('runs every step and numbers them', () async {
+        final run = await _run(scripts, ['check']);
+
+        expect(
+          run.executor.executions,
+          equals(['echo format', 'echo lint', 'echo test']),
+        );
+        expect(run.output, contains('> check [1/3]\n\$ echo format\n'));
+        expect(run.output, contains('> check [2/3]\n\$ rps lint\n'));
+        expect(run.output, contains('> lint\n\$ echo lint\n'));
+        expect(run.output, contains('> check [3/3]\n\$ echo test\n'));
+      });
+
+      test('prints every step in a dry run', () async {
+        final run = await _run(scripts, ['check'], dryRun: true);
+
+        expect(run.executor.executions, isEmpty);
+        expect(run.output, contains('> check [3/3]\n\$ echo test\n'));
+      });
+    });
+
     group(r'$env', () {
       const scripts = r'''
 scripts:

@@ -44,7 +44,9 @@ class ScriptsAnalyzer {
     final env = _env(value[ScriptsParser.envKey], errors);
     final envFiles = _envFiles(value[ScriptsParser.envFileKey], errors);
 
-    if (!value.containsKey(ScriptsParser.scriptKey)) {
+    final hasScript = value.containsKey(ScriptsParser.scriptKey);
+    final hasSteps = value.containsKey(ScriptsParser.stepsKey);
+    if (!hasScript && !hasSteps) {
       return ScriptGroup(
         before: before,
         after: after,
@@ -60,9 +62,25 @@ class ScriptsAnalyzer {
       );
     }
 
-    final command = _command(value[ScriptsParser.scriptKey], path, errors);
+    if (hasScript && hasSteps) {
+      errors.add(
+        'Use either "${ScriptsParser.scriptKey}" '
+        'or "${ScriptsParser.stepsKey}", not both.',
+      );
+    }
+    final steps = hasSteps
+        ? _commands(
+            value[ScriptsParser.stepsKey],
+            ScriptsParser.stepsKey,
+            path,
+            errors,
+          )
+        : null;
+    final command = steps?.join('\n') ??
+        _command(value[ScriptsParser.scriptKey], path, errors);
     return Script(
       command: command,
+      steps: steps,
       description: _string(value[ScriptsParser.descriptionKey]),
       before: before,
       after: after,
@@ -91,6 +109,19 @@ class ScriptsAnalyzer {
       'key: "${ScriptsParser.defaultScriptKey}".',
     );
     return '-';
+  }
+
+  List<String> _commands(
+    dynamic commands,
+    String key,
+    List<String> path,
+    List<String> errors,
+  ) {
+    if (commands is! List || commands.isEmpty) {
+      errors.add('The "$key" key must be a list of commands.');
+      return const [];
+    }
+    return [for (final command in commands) _command(command, path, errors)];
   }
 
   String? _cwd(Map<dynamic, dynamic> value, List<String> errors) {
