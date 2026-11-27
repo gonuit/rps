@@ -1,3 +1,5 @@
+import 'dart:io' as io;
+
 import 'package:rps/rps.dart';
 import 'package:rps/src/utils/platform.dart';
 import 'package:test/test.dart';
@@ -33,6 +35,30 @@ void main() {
       },
       testOn: 'mac-os',
     );
+
+    test('adds the given environment', () async {
+      final code = await execute(
+        io.Platform.isWindows
+            ? r'exit $env:RPS_TEST_CODE'
+            : r'exit $RPS_TEST_CODE',
+        shell: shell,
+        environment: {'RPS_TEST_CODE': '5'},
+      );
+      expect(code, equals(5));
+    });
+
+    test('runs in the given working directory', () async {
+      final directory = io.Directory.systemTemp.createTempSync('rps_exec_');
+      addTearDown(() => directory.deleteSync(recursive: true));
+      const command = 'dart --version > output.txt';
+      final code = await execute(
+        command,
+        shell: shell,
+        workingDirectory: directory.path,
+      );
+      expect(code, equals(0));
+      expect(io.File('${directory.path}/output.txt').existsSync(), isTrue);
+    });
 
     test('prints the interpreter in verbose mode', () async {
       final out = StringBuffer();

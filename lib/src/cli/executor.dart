@@ -20,11 +20,15 @@ class Executor {
 
   /// Executes the given shell [command] and returns the exit code.
   Future<int> execute(
-    String command,
-  ) {
+    String command, {
+    Map<String, String>? environment,
+    String? workingDirectory,
+  }) {
     return rps.execute(
       command,
       shell: shell,
+      environment: environment,
+      workingDirectory: workingDirectory,
       verbose: verbose,
       out: out,
     );

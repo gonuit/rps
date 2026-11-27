@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/executor.dart';
+import 'package:rps/src/cli/script_runner.dart';
 import 'package:rps/src/utils/platform.dart' show Platform;
 
 /// The `run` command that executes a script defined in pubspec.yaml.
@@ -54,35 +55,10 @@ class RunCommand {
       );
     }
 
-    for (final event in events) {
-      if (event is CommandExecuted) {
-        final basePath = event.context.basePath;
-        if (event.isHook) {
-          basePath.last = blue(basePath.last.substring(1));
-        }
-        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
-        final command = event.compile(shell: executor.shell);
-        console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
-        if (dryRun) continue;
-        final exitCode = await executor.execute(command);
-
-        if (exitCode != 0) {
-          throw ScriptFailedException(
-            'Command ended with a non zero exit code ($exitCode).',
-            exitCode: exitCode,
-          );
-        }
-        console.writeln();
-      } else if (event is CommandReferenced) {
-        final basePath = event.context.basePath;
-        if (event.isHook) {
-          basePath.last = blue(basePath.last.substring(1));
-        }
-        console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
-        console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
-      } else if (event is HookExecuted) {
-        // No output for hook events.
-      }
-    }
+    await ScriptRunner(
+      executor: executor,
+      console: console,
+      dryRun: dryRun,
+    ).run(events);
   }
 }

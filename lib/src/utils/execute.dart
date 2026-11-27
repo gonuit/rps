@@ -9,9 +9,13 @@ typedef ExecuteFunction = Future<int> Function(
 );
 
 /// Executes [command] in the [shell] and returns its exit code.
+///
+/// [environment] is added to the environment of this process.
 Future<int> execute(
   String command, {
   required Shell shell,
+  Map<String, String>? environment,
+  String? workingDirectory,
   bool verbose = false,
   StringSink? out,
 }) async {
@@ -24,6 +28,8 @@ Future<int> execute(
     process = await io.Process.start(
       shell.executable,
       shell.arguments(command),
+      environment: environment,
+      workingDirectory: workingDirectory,
       mode: io.ProcessStartMode.inheritStdio,
     );
   } on io.ProcessException catch (err, st) {

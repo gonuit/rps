@@ -40,7 +40,12 @@ class _NoOpExecutor extends Executor {
         );
 
   @override
-  Future<int> execute(String command) async => 0;
+  Future<int> execute(
+    String command, {
+    Map<String, String>? environment,
+    String? workingDirectory,
+  }) async =>
+      0;
 }
 
 Future<RpsResult> _runInProcess(List<String> args, {bool ci = false}) async {

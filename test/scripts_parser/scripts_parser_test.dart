@@ -56,7 +56,11 @@ class FakeExecutor extends Executor {
   final List<String> executions;
 
   @override
-  Future<int> execute(String command) async {
+  Future<int> execute(
+    String command, {
+    Map<String, String>? environment,
+    String? workingDirectory,
+  }) async {
     executions.add(command);
     return exitCode;
   }
