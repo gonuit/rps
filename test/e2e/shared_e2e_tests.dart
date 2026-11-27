@@ -147,6 +147,37 @@ void sharedE2eTests(RpsRunner run) {
     });
   });
 
+  group('dry run', () {
+    for (final arguments in [
+      ['--dry-run', 'build', 'android', 'apk'],
+      ['-n', 'build', 'android', 'apk'],
+      ['run', '--dry-run', 'build', 'android', 'apk'],
+    ]) {
+      test('${arguments.join(' ')} prints commands only', () async {
+        final result = await run(arguments);
+        final lines = stripAnsi(result.stdout).split('\n');
+
+        expect(result.exitCode, equals(0));
+        expect(lines, contains('> build before'));
+        expect(lines, contains(r'$ echo "flutter pub get"'));
+        expect(
+          lines,
+          contains(r'$ echo "flutter build --release apk --flavor production"'),
+        );
+        expect(lines, contains(r'$ echo "Build done!"'));
+        expect(lines, isNot(contains('flutter pub get')));
+        expect(lines, isNot(contains('Build done!')));
+      });
+    }
+
+    test('fails for a missing script', () async {
+      final result = await run(['--dry-run', 'nonexistent']);
+
+      expect(result.exitCode, isNot(0));
+      expect(stripAnsi(result.stderr), contains('Missing script'));
+    });
+  });
+
   group('nesting', () {
     test('executes deeply nested script', () async {
       final result = await run(['build', 'android', 'apk']);

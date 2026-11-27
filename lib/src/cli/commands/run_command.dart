@@ -15,11 +15,15 @@ class RunCommand implements Command {
   /// The executor used to run shell commands.
   final Executor executor;
 
+  /// Whether commands are printed instead of being run.
+  final bool dryRun;
+
   final Platform _platform;
 
   /// Creates a [RunCommand].
   RunCommand({
     required this.executor,
+    this.dryRun = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
   })  : _getScriptsSource = getScriptsSource,
@@ -40,7 +44,7 @@ class RunCommand implements Command {
   String get name => 'run';
 
   @override
-  String get tooltip => 'run <pubspec script> [arguments]';
+  String get tooltip => 'run [--dry-run] <pubspec script> [arguments]';
 
   @override
   bool match(List<String> arguments) {
@@ -89,6 +93,7 @@ class RunCommand implements Command {
         console.writeln('${boldGreen('>')} ${basePath.join(' ')}');
         final command = event.compile(syntax: _shellSyntax);
         console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
+        if (dryRun) continue;
         final exitCode = await executor.execute(command);
 
         if (exitCode != 0) {

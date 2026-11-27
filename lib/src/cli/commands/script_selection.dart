@@ -13,11 +13,15 @@ class ScriptSelectionCommand implements Command {
   /// The executor used to run shell commands.
   final Executor executor;
 
+  /// Whether the selected script is printed instead of being run.
+  final bool dryRun;
+
   final Platform _platform;
 
   /// Creates a [ScriptSelectionCommand].
   ScriptSelectionCommand({
     required this.executor,
+    this.dryRun = false,
     required FutureOr<ScriptsSource> Function() getScriptsSource,
     required Platform platform,
   })  : _getScriptsSource = getScriptsSource,
@@ -77,6 +81,7 @@ class ScriptSelectionCommand implements Command {
 
     await RunCommand(
       executor: executor,
+      dryRun: dryRun,
       getScriptsSource: () => source,
       platform: _platform,
     ).run(console, runCommandArguments);

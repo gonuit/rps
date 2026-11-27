@@ -37,6 +37,19 @@ void main() {
       expect(flags.arguments, equals(['run', 'run', '--no-color']));
     });
 
+    test('reads --dry-run and -n', () {
+      final long = GlobalFlags.parse(['run', '--dry-run', 'build']);
+      expect(long.dryRun, isTrue);
+      expect(long.arguments, equals(['run', 'build']));
+
+      final short = GlobalFlags.parse(['-n', '--no-color', 'build', '-n']);
+      expect(short.dryRun, isTrue);
+      expect(short.noColor, isTrue);
+      expect(short.arguments, equals(['build', '-n']));
+
+      expect(GlobalFlags.parse(['build', '--dry-run']).dryRun, isFalse);
+    });
+
     test('handles empty arguments', () {
       final flags = GlobalFlags.parse([]);
       expect(flags.noColor, isFalse);

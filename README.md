@@ -264,7 +264,25 @@ macos:
 | `-h`, `--help`    | Print help.                                                                |
 | `--version`       | Print rps version.                                                         |
 | `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
-| `--no-color`      | Disable colored output. Goes before the script name.                       |
+| `-n`, `--dry-run` | Print the commands of a script, with hooks, without running them.          |
+| `--no-color`      | Disable colored output.                                                    |
+
+`--dry-run` and `--no-color` go before the script name, for example `rps --dry-run build apk` or `rps run --dry-run build apk`. Everything after the script name is passed to the script.
+
+```
+$ rps --dry-run build android apk
+> build before
+$ flutter pub get
+
+> build android apk before
+$ echo "Building android apk..."
+
+> build android apk
+$ flutter build --release apk --flavor production
+
+> build after
+$ echo "Build done!"
+```
 
 Colors are also disabled when the output is not a terminal, when the `NO_COLOR` environment variable is set, or when `TERM` is `dumb`. The output of your scripts is never changed.
 

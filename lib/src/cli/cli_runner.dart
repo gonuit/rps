@@ -73,6 +73,7 @@ Future<int> runCli(
           ScriptSelectionCommand(
             getScriptsSource: getScriptSource,
             executor: executor,
+            dryRun: flags.dryRun,
             platform: platform,
           ),
         LsCommand(
@@ -82,6 +83,7 @@ Future<int> runCli(
         RunCommand(
           getScriptsSource: getScriptSource,
           executor: executor,
+          dryRun: flags.dryRun,
           platform: platform,
         ),
       ],

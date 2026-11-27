@@ -50,7 +50,7 @@ class HelpOption extends CliOption {
         }
       }
       for (final flag in GlobalFlags.descriptions.entries) {
-        console.writeln('      --${flag.key} - ${flag.value}');
+        console.writeln('${flag.key} - ${flag.value}');
       }
     }
 
