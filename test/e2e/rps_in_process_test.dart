@@ -46,6 +46,7 @@ class _NoOpExecutor extends Executor {
     String command, {
     Map<String, String>? environment,
     String? workingDirectory,
+    CommandOutput? output,
   }) async =>
       0;
 }

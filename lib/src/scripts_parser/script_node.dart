@@ -65,8 +65,12 @@ class ScriptArgument {
 class Script extends ScriptNode {
   /// The command for the current platform.
   ///
-  /// For a script with [steps] it is all of them, one per line.
+  /// For a script with [steps] or [parallel] it is all of them,
+  /// one per line.
   final String command;
+
+  /// Commands run at the same time, when the script is a parallel group.
+  final List<String>? parallel;
 
   /// Commands run one after another, when the script is a sequence.
   final List<String>? steps;
@@ -87,6 +91,7 @@ class Script extends ScriptNode {
   const Script({
     required this.command,
     this.steps,
+    this.parallel,
     this.description,
     this.args = const [],
     this.confirm = false,

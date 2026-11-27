@@ -62,6 +62,7 @@ class FakeExecutor extends Executor {
     String command, {
     Map<String, String>? environment,
     String? workingDirectory,
+    CommandOutput? output,
   }) async {
     executions.add(command);
     workingDirectories.add(workingDirectory);

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io' as io;
+import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 import 'package:prompts/prompts.dart' as prompts;
@@ -19,6 +21,32 @@ bool _ask(String message) {
   return answer.trim().toLowerCase().startsWith('y');
 }
 
+class _Cancelled implements Exception {
+  const _Cancelled();
+}
+
+class _Branch {
+  static const _colors = [lightBlue, violet, green, yellow, blue];
+
+  final String label;
+  final int width;
+  final int color;
+  final Future<void> cancelled;
+  var isCancelled = false;
+
+  _Branch({
+    required this.label,
+    required this.width,
+    required this.color,
+    required this.cancelled,
+  }) {
+    cancelled.then((_) => isCancelled = true).ignore();
+  }
+
+  String get prefix =>
+      _colors[color % _colors.length]('[${label.padRight(width)}]');
+}
+
 /// Prints and runs the commands of a resolved script.
 class ScriptRunner {
   /// The executor used to run shell commands.
@@ -26,6 +54,9 @@ class ScriptRunner {
 
   /// Where the progress is printed.
   final Console console;
+
+  /// Where the error output of commands run at the same time is printed.
+  final Console errors;
 
   /// Whether commands are printed instead of being run.
   final bool dryRun;
@@ -45,42 +76,64 @@ class ScriptRunner {
   ScriptRunner({
     required this.executor,
     required this.console,
+    Console? errors,
     this.dryRun = false,
     this.assumeYes = false,
     this.interactive = false,
     Confirm confirm = _ask,
     FileSystem fs = const SystemFileSystem(),
     Map<String, String>? processEnvironment,
-  })  : _confirm = confirm,
+  })  : errors = errors ?? console,
+        _confirm = confirm,
         _fs = fs,
         _processEnvironment = processEnvironment ?? io.Platform.environment;
 
   /// Runs [events] in order and stops at the first command that fails.
   Future<void> run(List<ExecutionEvent> events) async {
     _confirmAll(events);
+    await _run(events, null);
+  }
+
+  Future<void> _run(List<ExecutionEvent> events, _Branch? branch) async {
     for (final event in events) {
+      if (branch != null && branch.isCancelled) throw const _Cancelled();
       switch (event) {
         case ConfirmationRequired():
           if (dryRun) {
-            console.writeln('${bold(yellow('?'))} ${event.message}\n');
+            _print(branch, '${bold(yellow('?'))} ${event.message}\n');
           }
         case CommandExecuted():
-          await _execute(event);
+          await _execute(event, branch);
         case CommandReferenced():
           _header(
+            branch,
             event.context,
             isHook: event.isHook,
             step: event.step,
             directory: null,
           );
-          console.writeln('${boldGreen(r'$ rps')} ${bold(event.command)}\n');
+          _print(branch, '${boldGreen(r'$ rps')} ${bold(event.command)}\n');
+        case ParallelExecuted():
+          await _parallel(event, branch);
+      }
+    }
+  }
+
+  Iterable<ExecutionEvent> _flatten(List<ExecutionEvent> events) sync* {
+    for (final event in events) {
+      yield event;
+      if (event is ParallelExecuted) {
+        for (final branch in event.branches) {
+          yield* _flatten(branch.events);
+        }
       }
     }
   }
 
   void _confirmAll(List<ExecutionEvent> events) {
     if (dryRun || assumeYes) return;
-    final confirmations = events.whereType<ConfirmationRequired>().toSet();
+    final confirmations =
+        _flatten(events).whereType<ConfirmationRequired>().toSet();
     for (final confirmation in confirmations) {
       if (!interactive) {
         throw RpsUsageException(
@@ -94,7 +147,18 @@ class ScriptRunner {
     if (confirmations.isNotEmpty) console.writeln();
   }
 
+  void _print(_Branch? branch, String text) {
+    if (branch == null) {
+      console.writeln(text);
+      return;
+    }
+    for (final line in text.trimRight().split('\n')) {
+      console.writeln('${branch.prefix} $line');
+    }
+  }
+
   void _header(
+    _Branch? branch,
     Context context, {
     required bool isHook,
     required (int, int)? step,
@@ -104,12 +168,15 @@ class ScriptRunner {
     if (isHook) {
       basePath.last = blue(basePath.last.substring(1));
     }
-    console.writeln([
-      boldGreen('>'),
-      ...basePath,
-      if (step != null) gray('[${step.$1}/${step.$2}]'),
-      if (directory != null) gray('($directory)'),
-    ].join(' '));
+    _print(
+      branch,
+      [
+        boldGreen('>'),
+        ...basePath,
+        if (step != null) gray('[${step.$1}/${step.$2}]'),
+        if (directory != null) gray('($directory)'),
+      ].join(' '),
+    );
   }
 
   String? _workingDirectory(CommandExecuted event) {
@@ -146,28 +213,97 @@ class ScriptRunner {
     return environment.isEmpty ? null : environment;
   }
 
-  Future<void> _execute(CommandExecuted event) async {
+  Future<void> _execute(CommandExecuted event, _Branch? branch) async {
     _header(
+      branch,
       event.context,
       isHook: event.isHook,
       step: event.step,
       directory: event.workingDirectory,
     );
     final command = event.compile(shell: executor.shell);
-    console.writeln('${boldGreen(r'$')} ${bold(command)}\n');
+    _print(branch, '${boldGreen(r'$')} ${bold(command)}\n');
     if (dryRun) return;
 
     final exitCode = await executor.execute(
       command,
       environment: _environment(event),
       workingDirectory: _workingDirectory(event),
+      output: branch == null
+          ? null
+          : CommandOutput(
+              onOutput: (line) => console.writeln('${branch.prefix} $line'),
+              onError: (line) => errors.writeln('${branch.prefix} $line'),
+              cancelled: branch.cancelled,
+            ),
     );
+    if (branch != null && branch.isCancelled) throw const _Cancelled();
     if (exitCode != 0) {
       throw ScriptFailedException(
-        'Command ended with a non zero exit code ($exitCode).',
+        branch == null
+            ? 'Command ended with a non zero exit code ($exitCode).'
+            : 'The command "${branch.label}" ended with '
+                'a non zero exit code ($exitCode).',
         exitCode: exitCode,
       );
     }
-    console.writeln();
+    if (branch == null) console.writeln();
+  }
+
+  Future<void> _parallel(ParallelExecuted event, _Branch? parent) async {
+    final count = event.branches.length;
+    _print(
+      parent,
+      '${boldGreen('>')} ${event.path} ${gray('($count in parallel)')}\n',
+    );
+
+    final cancel = Completer<void>();
+    void stop() {
+      if (!cancel.isCompleted) cancel.complete();
+    }
+
+    parent?.cancelled.then((_) => stop()).ignore();
+    final labels = [
+      for (final branch in event.branches)
+        [if (parent != null) parent.label, branch.label].join(' '),
+    ];
+    final width = labels.map((label) => label.length).reduce(math.max);
+    final branches = [
+      for (final (index, label) in labels.indexed)
+        _Branch(
+          label: label,
+          width: width,
+          color: index,
+          cancelled: cancel.future,
+        ),
+    ];
+
+    (Object, StackTrace)? failure;
+    Future<void> runBranch(int index) async {
+      try {
+        await _run(event.branches[index].events, branches[index]);
+      } on _Cancelled {
+        return;
+      } catch (error, stackTrace) {
+        failure ??= (error, stackTrace);
+        stop();
+      }
+    }
+
+    if (dryRun) {
+      for (var index = 0; index < count; index++) {
+        await runBranch(index);
+      }
+    } else {
+      await Future.wait([
+        for (var index = 0; index < count; index++) runBranch(index),
+      ]);
+    }
+
+    if (failure case (final error, final stackTrace)) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+    if (parent != null && parent.isCancelled) throw const _Cancelled();
+    if (parent == null) console.writeln();
   }
 }

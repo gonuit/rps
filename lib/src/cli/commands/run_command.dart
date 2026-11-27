@@ -56,7 +56,13 @@ class RunCommand {
   }
 
   /// Runs the script that [arguments] point to, with its hooks.
-  Future<void> run(Console console, List<String> arguments) async {
+  ///
+  /// The error output of commands run at the same time goes to [errors].
+  Future<void> run(
+    Console console,
+    List<String> arguments, {
+    Console? errors,
+  }) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
 
@@ -71,6 +77,7 @@ class RunCommand {
     await ScriptRunner(
       executor: executor,
       console: console,
+      errors: errors,
       dryRun: dryRun,
       assumeYes: assumeYes,
       interactive: interactive,

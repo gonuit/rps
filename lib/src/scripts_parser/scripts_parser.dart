@@ -22,6 +22,9 @@ abstract class ScriptsParser {
   /// Key for the entry with commands run one after another.
   static const stepsKey = r'$steps';
 
+  /// Key for the entry with commands run at the same time.
+  static const parallelKey = r'$parallel';
+
   /// Key for the named arguments entry.
   static const argsKey = r'$args';
 
@@ -45,6 +48,7 @@ abstract class ScriptsParser {
         descriptionKey ||
         defaultScriptKey ||
         stepsKey ||
+        parallelKey ||
         argsKey ||
         confirmKey ||
         cwdKey ||
@@ -194,7 +198,31 @@ class _ScriptParser implements ScriptsParser {
         final entered = _enter(stack, context.basePath.join(' '));
         final (named, positional) = _named(node, context, arguments);
         final steps = node.steps;
-        if (steps == null) {
+        final parallel = node.parallel;
+        if (parallel != null) {
+          _checkArguments(node, context, positional);
+          yield ParallelExecuted(
+            context: context,
+            branches: [
+              for (final (index, command) in parallel.indexed)
+                ParallelBranch(
+                  label: command.startsWith('rps ')
+                      ? command.substring(4).trim()
+                      : '${index + 1}',
+                  events: _command(
+                    root,
+                    context: context,
+                    command: command,
+                    arguments: positional,
+                    named: named,
+                    stack: entered,
+                    scope: scope,
+                    step: (index + 1, parallel.length),
+                  ).toList(),
+                ),
+            ],
+          );
+        } else if (steps == null) {
           yield* _command(
             root,
             context: context,
@@ -396,16 +424,8 @@ class _ScriptParser implements ScriptsParser {
       return;
     }
 
-    final referencedCommand = command.substring(4).trim();
-    yield CommandReferenced(
-      command: referencedCommand,
-      context: context,
-      label: context.key!,
-      isHook: isHook,
-      step: step,
-    );
     final words = [
-      for (final word in referencedCommand.split(RegExp(r'\s+')))
+      for (final word in command.substring(4).trim().split(RegExp(r'\s+')))
         _fill(
           word,
           context,
@@ -414,6 +434,13 @@ class _ScriptParser implements ScriptsParser {
           positional: step != null,
         ),
     ];
+    yield CommandReferenced(
+      command: words.join(' '),
+      context: context,
+      label: context.key!,
+      isHook: isHook,
+      step: step,
+    );
 
     // Ref should start from root.
     yield* _resolve(

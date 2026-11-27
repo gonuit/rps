@@ -251,7 +251,7 @@ number:
 
       expect(
         root.children['both']!.error,
-        r'Use either "$script" or "$steps", not both.',
+        r'Use only one of "$script", "$steps" and "$parallel".',
       );
       expect(
         root.children['text']!.error,
@@ -351,6 +351,34 @@ group:
       expect(
         root.children['group']!.error,
         r'The "$confirm" key can be used only in a script.',
+      );
+    });
+
+    test(r'reads $parallel as a script', () {
+      final root = _analyze(r'''
+verify:
+  $parallel:
+    - rps analyze
+    - dart test
+both:
+  $steps: [echo a]
+  $parallel: [echo b]
+empty:
+  $parallel: []
+''') as ScriptGroup;
+      final verify = root.children['verify'] as Script;
+
+      expect(verify.parallel, equals(['rps analyze', 'dart test']));
+      expect(verify.steps, isNull);
+      expect(verify.command, equals('rps analyze\ndart test'));
+      expect(verify.error, isNull);
+      expect(
+        root.children['both']!.error,
+        r'Use only one of "$script", "$steps" and "$parallel".',
+      );
+      expect(
+        root.children['empty']!.error,
+        r'The "$parallel" key must be a list of commands.',
       );
     });
 

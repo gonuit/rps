@@ -619,6 +619,73 @@ scripts:
       );
     });
 
+    group(r'$parallel', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource(r'''
+scripts:
+  analyze: dart analyze
+  test:
+    $confirm: true
+    $before: echo before
+    $script: dart test ${0}
+  verify:
+    $before: echo start
+    $parallel:
+      - rps analyze
+      - rps test ${0}
+      - echo ${0}
+    $after: echo done
+'''),
+        platform: const FakePlatform(),
+      );
+
+      test('resolves every branch on its own', () {
+        final events = parser.getCommandsToExecute(['verify', 'unit']);
+        final parallel = events.whereType<ParallelExecuted>().single;
+
+        expect(
+          events.map((e) => e.runtimeType.toString()),
+          equals([
+            'HookExecuted',
+            'CommandExecuted',
+            'ParallelExecuted',
+            'HookExecuted',
+            'CommandExecuted',
+          ]),
+        );
+        expect(parallel.path, equals('verify'));
+        expect(
+          parallel.branches.map((b) => b.label),
+          equals(['analyze', r'test ${0}', '3']),
+        );
+        expect(
+          [
+            for (final branch in parallel.branches)
+              branch.events
+                  .whereType<CommandExecuted>()
+                  .map((e) => e.compile())
+                  .toList(),
+          ],
+          equals([
+            ['dart analyze'],
+            ['echo before', 'dart test unit'],
+            ['echo unit'],
+          ]),
+        );
+        expect(
+          parallel.branches[1].events.whereType<ConfirmationRequired>(),
+          hasLength(1),
+        );
+      });
+
+      test('rejects additional arguments', () {
+        expect(
+          () => parser.getCommandsToExecute(['verify', 'unit', 'more']),
+          throwsA(isA<RpsUsageException>()),
+        );
+      });
+    });
+
     test('detects a cycle through a hook', () {
       final parser = ScriptsParser(
         source: MockedScriptSource(r'''

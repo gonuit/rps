@@ -57,6 +57,40 @@ void main() {
     sharedE2eTests(_runProcess);
 
     group('script keys', () {
+      test(r'$parallel labels the output and stops at a failure', () async {
+        const sleeper = "import 'dart:io';\n"
+            'void main() {\n'
+            "  stdout.writeln('sleeping');\n"
+            '  sleep(const Duration(seconds: 60));\n'
+            '}\n';
+        final passed = await _runIn(
+          'name: app\nscripts:\n'
+          '  version: dart --version\n'
+          '  all:\n'
+          '    \$parallel:\n'
+          '      - rps version\n'
+          '      - dart --version\n',
+          ['all'],
+        );
+        final watch = Stopwatch()..start();
+        final failed = await _runIn(
+          'name: app\nscripts:\n'
+          '  all:\n'
+          '    \$parallel:\n'
+          '      - dart sleeper.dart\n'
+          '      - exit 4\n',
+          ['all'],
+          files: {'sleeper.dart': sleeper},
+        );
+
+        expect(passed.exitCode, equals(0), reason: '${passed.stderr}');
+        expect(passed.stdout, contains('[version] Dart SDK version'));
+        expect(passed.stdout, contains('[2      ] Dart SDK version'));
+        expect(failed.exitCode, equals(4));
+        expect(failed.stderr, contains('The command "2" ended'));
+        expect(watch.elapsed, lessThan(const Duration(seconds: 45)));
+      });
+
       test(r'$confirm needs --yes without a terminal', () async {
         const yaml = 'name: app\nscripts:\n'
             '  reset:\n'

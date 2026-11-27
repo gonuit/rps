@@ -23,12 +23,14 @@ class Executor {
     String command, {
     Map<String, String>? environment,
     String? workingDirectory,
+    rps.CommandOutput? output,
   }) {
     return rps.execute(
       command,
       shell: shell,
       environment: environment,
       workingDirectory: workingDirectory,
+      output: output,
       verbose: verbose,
       out: out,
     );

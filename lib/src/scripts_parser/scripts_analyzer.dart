@@ -46,7 +46,9 @@ class ScriptsAnalyzer {
 
     final hasScript = value.containsKey(ScriptsParser.scriptKey);
     final hasSteps = value.containsKey(ScriptsParser.stepsKey);
-    if (!hasScript && !hasSteps) {
+    final hasParallel = value.containsKey(ScriptsParser.parallelKey);
+    final kinds = [hasScript, hasSteps, hasParallel].where((has) => has);
+    if (kinds.isEmpty) {
       for (final key in [ScriptsParser.argsKey, ScriptsParser.confirmKey]) {
         if (value.containsKey(key)) {
           errors.add('The "$key" key can be used only in a script.');
@@ -67,12 +69,20 @@ class ScriptsAnalyzer {
       );
     }
 
-    if (hasScript && hasSteps) {
+    if (kinds.length > 1) {
       errors.add(
-        'Use either "${ScriptsParser.scriptKey}" '
-        'or "${ScriptsParser.stepsKey}", not both.',
+        'Use only one of "${ScriptsParser.scriptKey}", '
+        '"${ScriptsParser.stepsKey}" and "${ScriptsParser.parallelKey}".',
       );
     }
+    final parallel = hasParallel
+        ? _commands(
+            value[ScriptsParser.parallelKey],
+            ScriptsParser.parallelKey,
+            path,
+            errors,
+          )
+        : null;
     final steps = hasSteps
         ? _commands(
             value[ScriptsParser.stepsKey],
@@ -83,10 +93,12 @@ class ScriptsAnalyzer {
         : null;
     final confirm = value[ScriptsParser.confirmKey];
     final command = steps?.join('\n') ??
+        parallel?.join('\n') ??
         _command(value[ScriptsParser.scriptKey], path, errors);
     return Script(
       command: command,
       steps: steps,
+      parallel: parallel,
       args: _args(value[ScriptsParser.argsKey], errors),
       confirm: _confirm(confirm, errors),
       confirmMessage: confirm is String ? confirm : null,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' as io;
 
 import 'package:rps/rps.dart';
@@ -58,6 +59,47 @@ void main() {
       );
       expect(code, equals(0));
       expect(io.File('${directory.path}/output.txt').existsSync(), isTrue);
+    });
+
+    test('passes the output line by line when asked to', () async {
+      final out = <String>[];
+      final errors = <String>[];
+      final code = await execute(
+        io.Platform.isWindows
+            ? 'Write-Output one; Write-Output two; '
+                '[Console]::Error.WriteLine("oops"); exit 2'
+            : 'echo one; echo two; echo oops >&2; exit 2',
+        shell: shell,
+        output: CommandOutput(onOutput: out.add, onError: errors.add),
+      );
+
+      expect(code, equals(2));
+      expect(out, equals(['one', 'two']));
+      expect(errors, equals(['oops']));
+    });
+
+    test('stops the command when it is cancelled', () async {
+      final cancel = Completer<void>();
+      final out = <String>[];
+      final watch = Stopwatch()..start();
+      final code = execute(
+        io.Platform.isWindows
+            ? 'Write-Output started; Start-Sleep 60; Write-Output late'
+            : 'echo started; sleep 60; echo late',
+        shell: shell,
+        output: CommandOutput(
+          onOutput: (line) {
+            out.add(line);
+            if (!cancel.isCompleted) cancel.complete();
+          },
+          onError: (_) {},
+          cancelled: cancel.future,
+        ),
+      );
+
+      expect(await code, isNot(0));
+      expect(out, equals(['started']));
+      expect(watch.elapsed, lessThan(const Duration(seconds: 30)));
     });
 
     test('prints the interpreter in verbose mode', () async {

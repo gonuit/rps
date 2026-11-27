@@ -36,7 +36,7 @@ class ScriptSelectionCommand {
         _fs = fs;
 
   /// Asks for a script and its arguments, then runs it.
-  Future<void> run(Console console) async {
+  Future<void> run(Console console, {Console? errors}) async {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
@@ -95,7 +95,7 @@ class ScriptSelectionCommand {
       getScriptsSource: () => source,
       platform: _platform,
       fs: _fs,
-    ).run(console, runCommandArguments);
+    ).run(console, runCommandArguments, errors: errors);
   }
 }
 

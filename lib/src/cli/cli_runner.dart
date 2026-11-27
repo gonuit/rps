@@ -82,7 +82,7 @@ Future<int> runCli(
           interactive: !environment.isCI && environment.hasTerminal,
           platform: platform,
           fs: fs,
-        ).run(out, arguments.script);
+        ).run(out, arguments.script, errors: errors);
       case RpsAction.select:
         if (environment.isCI) {
           throw RpsUsageException('No command has been matched.');
@@ -94,7 +94,7 @@ Future<int> runCli(
             assumeYes: assumeYes,
             platform: platform,
             fs: fs,
-          ).run(out);
+          ).run(out, errors: errors);
         } else {
           printHelp(out, package);
         }
