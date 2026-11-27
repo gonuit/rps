@@ -1,3 +1,16 @@
+## 0.13.0
+- Added `$steps`: a script can run several commands and references one after another and stops at the first one that fails.
+- Added `$parallel`: a script can run commands at the same time, with every line of the output labeled with its command.
+  - When one command fails, the others are stopped.
+- Added named arguments. A script declares them with `$args`, uses them as `${name}` and gets them as `--name value` or `--name=value`.
+- Added `$env` and `$envFile` to set environment variables for a script or a group of scripts.
+- Added `$cwd` to run a script or a group of scripts in another directory.
+- Added `$confirm`: a script can ask for confirmation before it runs. `--yes` (`-y`) or `RPS_YES=1` confirms it, and without a terminal the script does not run without them.
+- `rps ls` and `rps ls --json` describe the new keys: `steps`, `parallel`, `cwd`, `env`, `envFiles`, `confirm` and named arguments.
+- A key that starts with `$` and is not known to rps, such as a misspelled `$descripton`, is now reported as an error instead of being ignored or treated as a script.
+- A reference can be used more than once in the hooks of one script.
+- `rps ls | head` and similar no longer end with a stack trace when the reader closes the output.
+
 ## 0.12.0
 - Colors are used only when the output is a terminal. They are also disabled by the `NO_COLOR` environment variable, `TERM=dumb` and the new `--no-color` flag.
   - Output piped to a file or another program no longer contains color codes.
