@@ -1,17 +1,14 @@
-## 0.11.1
-- Running a script that does not exist now fails instead of exiting with success, also for nested paths and references.
-- Fixed quoting of arguments passed to scripts: apostrophes, empty arguments and shell characters such as `&`, `;` or `*` are passed as-is.
+## 0.11.0
+- Skip update check and interactive selection in CI environments.
+  - `CI=false` and `CI=0` are not treated as a CI environment.
+- Fixed gray text invisible on dark terminals.
+- Fixed quoting of arguments passed to scripts: spaces, apostrophes, empty arguments and shell characters such as `&`, `;` or `*` are passed as-is.
   - Arguments are now always literal, so `$VAR` inside an argument is no longer expanded by the shell.
+- Running a script that does not exist now fails instead of exiting with success, also for nested paths and references.
 - Scripts nested under a `run` key can be selected from the menu and run with `rps run <name>`.
-- `CI=false` and `CI=0` are no longer treated as a CI environment.
 - Problems with the update check (network, proxy, read-only package directory) no longer break or delay rps.
 - Calling `rps` without a terminal prints help instead of crashing.
 - An empty `rps.yaml` no longer causes an error.
-
-## 0.11.0
-- Skip update check and interactive selection in CI environments.
-- Fixed gray text invisible on dark terminals.
-- Fixed arguments with spaces not being quoted.
 
 ## 0.10.1
 - Added dartdoc comments and package example.
