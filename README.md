@@ -17,6 +17,7 @@ RPS is a dart script manager that allows you to define and use scripts from the 
 - [🌱 Environment variables](#-environment-variables)
 - [📂 Working directory](#-working-directory)
 - [✋ Confirmation](#-confirmation)
+- [🗂 Workspaces](#-workspaces)
 - [📝 External scripts file](#-external-scripts-file)
 - [🛠 CLI options](#-cli-options)
 - [🚦 Exit codes](#-exit-codes)
@@ -141,6 +142,8 @@ scripts:
 ```
 
 References can also be used with `$before` and `$after` hooks.
+
+A command that passes an option to rps, such as `rps --all test`, is not a reference. It starts rps as any other command.
 
 ## 🪝 Hooks
 
@@ -379,6 +382,45 @@ Drop the local database? (y/N)
 - Without a terminal, for example in CI, rps does not run the script unless `--yes` is given, and exits with code `64`.
 - `--dry-run` shows the question and does not ask.
 
+## 🗂 Workspaces
+
+In a [pub workspace](https://dart.dev/tools/pub/workspaces), `rps --all <script>` runs the script in every package that defines it. Each package keeps its own scripts, in its `pubspec.yaml` or `rps.yaml`.
+
+```
+$ rps --all test
+▶ core (packages/core)
+
+> test
+$ dart test
+
+▶ app (packages/app)
+
+> test
+$ flutter test
+
+✓ Ran "test" in 2 package(s).
+```
+
+- Packages that do not define the script are skipped. When no package defines it, rps exits with code `64`.
+- A package runs after the workspace packages it depends on. Otherwise the order of the `workspace` list is kept.
+- Every script runs in the directory of its package, so `$cwd` and `$envFile` are relative to that package.
+- The workspace is found from the current directory upwards, so the command works from any package. The root package itself is not run.
+- Arguments after the script name are passed to the script in every package.
+- rps stops at the first package that fails. With `--continue` it runs the remaining packages and exits with the code of the first failure.
+- `--parallel` runs the packages at the same time and labels every line with the package name, as in [parallel scripts](#-parallel-scripts). The dependency order is not kept then.
+- `--dry-run` shows what would run in which package. [Confirmations](#-confirmation) of all packages are asked before anything runs.
+
+Because the root is not run, it can offer the same script for the whole workspace:
+
+```yaml
+# pubspec.yaml of the workspace root
+scripts:
+  test: rps --all test
+  analyze: rps --all --parallel analyze
+```
+
+Patterns in the `workspace` list are supported with `*` within a path segment, such as `packages/*`.
+
 ## 📝 External scripts file
 
 If you prefer to keep your scripts separate from your `pubspec.yaml`, you can define them in an external **`rps.yaml`** file. When an `rps.yaml` file is present in your project's root directory, rps will use it as the scripts source **instead of the scripts in `pubspec.yaml`**.
@@ -423,9 +465,12 @@ macos:
 | `-u`, `--upgrade` | Upgrade rps to the latest version (runs `dart pub global activate rps`).   |
 | `-n`, `--dry-run` | Print the commands of a script, with hooks, without running them.          |
 | `-y`, `--yes`     | Confirm scripts that ask for [confirmation](#-confirmation).               |
+| `-a`, `--all`     | Run the script in every package of the [workspace](#-workspaces).          |
+| `--continue`      | With `--all`, keep going after the script fails in a package.              |
+| `--parallel`      | With `--all`, run the packages at the same time.                           |
 | `--no-color`      | Disable colored output.                                                    |
 
-`--dry-run`, `--yes` and `--no-color` go before the script name, for example `rps --dry-run build apk` or `rps run --dry-run build apk`. Everything after the script name is passed to the script.
+These options go before the script name, for example `rps --dry-run build apk` or `rps run --dry-run build apk`. Everything after the script name is passed to the script.
 
 ```
 $ rps --dry-run build android apk
@@ -452,7 +497,7 @@ rps checks for a new version once a day and shows a notice when one is available
 | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `0`   | Success.                                                                                                                                       |
 | `64`  | The script does not exist, the path is incomplete, an argument is missing or not accepted, an option is unknown, or a script needs `--yes`.     |
-| `78`  | Configuration problem: `pubspec.yaml` or `rps.yaml` is missing or invalid, there is no `scripts` key, or a script is defined incorrectly.       |
+| `78`  | Configuration problem: `pubspec.yaml` or `rps.yaml` is missing or invalid, there is no `scripts` key, a script is defined incorrectly, or `--all` is used outside of a workspace. |
 | `1`   | Any other rps error, or a [confirmation](#-confirmation) that was declined.                                                                    |
 | other | The exit code of the failed script or hook, passed through unchanged.                                                                          |
 
@@ -466,6 +511,7 @@ rps works without a terminal, so coding agents and other tools can use it the sa
 - **Check before running** with `rps --dry-run <script>`. It prints every command that would run, hooks included, and runs nothing.
 - **Confirm on purpose.** A script with a `confirm` question in `rps ls --json` does not run without a terminal. Pass `rps --yes <script>` only when running it is really intended.
 - **Run** with `rps <script> [arguments]`. Without a terminal there is no menu, no update notice and no colors.
+- **Run across a workspace** with `rps --all <script>`. Add `--dry-run` to see which packages define the script.
 - **Read the result** from the [exit code](#-exit-codes). Errors of rps go to stderr, the output of the script is passed through as it is.
 
 If the agent runs in a terminal emulator, set `CI=1` to turn off the menu and the update notice, and `NO_COLOR=1` to turn off colors.

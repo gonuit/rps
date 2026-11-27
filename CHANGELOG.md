@@ -6,6 +6,9 @@
 - Added `$env` and `$envFile` to set environment variables for a script or a group of scripts.
 - Added `$cwd` to run a script or a group of scripts in another directory.
 - Added `$confirm`: a script can ask for confirmation before it runs. `--yes` (`-y`) or `RPS_YES=1` confirms it, and without a terminal the script does not run without them.
+- Added support for pub workspaces: `rps --all <script>` (`-a`) runs a script in every workspace package that defines it, dependencies first.
+  - `--continue` keeps going after a package fails, and `--parallel` runs the packages at the same time with labeled output.
+- A command that passes an option to rps, such as `rps --all test`, starts rps instead of being read as a reference to a script.
 - `rps ls` and `rps ls --json` describe the new keys: `steps`, `parallel`, `cwd`, `env`, `envFiles`, `confirm` and named arguments.
 - A key that starts with `$` and is not known to rps, such as a misspelled `$descripton`, is now reported as an error instead of being ignored or treated as a script.
 - A reference can be used more than once in the hooks of one script.
