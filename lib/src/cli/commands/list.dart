@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:rps/rps.dart';
 import 'package:rps/src/cli/commands/command.dart';
@@ -17,13 +18,14 @@ class LsCommand implements Command {
         _platform = platform;
 
   @override
-  String get description => 'List all commands.';
+  String get description =>
+      'List all commands. Add --json for machine-readable output.';
 
   @override
   String get name => 'ls';
 
   @override
-  String get tooltip => 'ls';
+  String get tooltip => 'ls [--json]';
 
   @override
   bool match(List<String> arguments) {
@@ -35,6 +37,24 @@ class LsCommand implements Command {
     final source = await _getScriptsSource();
     final parser = ScriptsParser(source: source, platform: _platform);
     final commands = parser.listCommands().where((c) => !c.isHook).toList();
+    if (arguments.skip(1).contains('--json')) {
+      console.writeln(const JsonEncoder.withIndent('  ').convert({
+        'scripts': [
+          for (final command in commands)
+            {
+              'path': command.path,
+              'command': command.command,
+              'description': command.description,
+              'arguments': [
+                for (final argument in command.commandArguments)
+                  {'name': argument.name, 'index': argument.index},
+              ],
+              'errors': command.errors,
+            },
+        ],
+      }));
+      return;
+    }
     if (commands.isNotEmpty) {
       console.writeln('${bold('Commands')}:');
       for (final command in commands) {

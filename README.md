@@ -62,6 +62,28 @@ Commands:
     Builds an Android app
 ```
 
+For tools and scripts, `rps ls --json` prints the same list as JSON:
+
+```json
+{
+  "scripts": [
+    {
+      "path": "build web",
+      "command": "flutter build web --flavor production -t lib/main.dart",
+      "description": "Builds a web application",
+      "arguments": [],
+      "errors": []
+    }
+  ]
+}
+```
+
+- `path` is what you type after `rps`.
+- `command` is the command for the current platform.
+- `description` is `null` when the script has none.
+- `arguments` lists the [positional arguments](#-positional-arguments) the script expects, for example `{"name": "${0}", "index": 0}`.
+- `errors` lists problems in the script definition. A script with errors cannot be run.
+
 ## 🪆 Nesting
 
 Nest your commands to group them contextually and make them easier to understand.

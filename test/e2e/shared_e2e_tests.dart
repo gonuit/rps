@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io' as io;
 
 import 'package:test/test.dart';
@@ -82,6 +83,32 @@ void sharedE2eTests(RpsRunner run) {
       expect(output, contains('Generates code with build_runner'));
       expect(output, contains('Builds production Android APK'));
       expect(output, contains('Clears the app cache'));
+    });
+  });
+
+  group('ls --json', () {
+    test('prints scripts as JSON', () async {
+      final result = await run(['ls', '--json']);
+      final scripts = (jsonDecode(result.stdout) as Map)['scripts'] as List;
+      final target = scripts.firstWhere((s) => s['path'] == 'target');
+
+      expect(result.exitCode, equals(0));
+      expect(
+        scripts.map((s) => s['path']),
+        containsAll(['run', 'gen', 'build android apk', 'bab', 'reset']),
+      );
+      expect(
+        target,
+        equals({
+          'path': 'target',
+          'command': r'echo "flutter build ${0} -t lib/main.dart --release"',
+          'description': 'Builds the specified target using positional arg',
+          'arguments': [
+            {'name': r'${0}', 'index': 0},
+          ],
+          'errors': [],
+        }),
+      );
     });
   });
 
