@@ -11,6 +11,7 @@ void printHelp(Console console, RpsPackage package) {
     ..writeln('${bold('Usage')}:')
     ..writeln('  rps [options] <script> [arguments]')
     ..writeln('  rps [options] run <script> [arguments]')
+    ..writeln('  rps --all [options] <script> [arguments]')
     ..writeln('  rps ls [--json]')
     ..writeln()
     ..writeln('${bold('Options')}:')

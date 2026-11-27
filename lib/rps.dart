@@ -1,6 +1,7 @@
 /// Run Project Scripts — a script runner for Dart and Flutter projects.
 library;
 
+export 'src/cli/commands/run_all_command.dart';
 export 'src/cli/commands/run_command.dart';
 export 'src/cli/console.dart';
 export 'src/cli/executor.dart';

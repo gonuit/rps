@@ -77,6 +77,13 @@ Future<int> runCli(
           getScriptsSource: getScriptSource,
           platform: platform,
         ).run(out, json: arguments.json);
+      case RpsAction.run when arguments.all:
+        await RunAllCommand(
+          runner: runner,
+          workspace: Workspace.find(fs),
+          fs: fs,
+          platform: platform,
+        ).run(arguments.script);
       case RpsAction.run:
         await RunCommand(
           runner: runner,

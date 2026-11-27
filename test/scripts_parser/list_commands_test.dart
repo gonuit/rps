@@ -246,6 +246,20 @@ scripts:
       );
     });
 
+    test('runs rps with an option as a command, not as a reference', () {
+      final parser = ScriptsParser(
+        source: MockedScriptSource('''
+scripts:
+  test: rps --all test
+'''),
+        platform: const FakePlatform(),
+      );
+
+      final events = parser.getCommandsToExecute(['test', 'x']);
+      expect(events, hasLength(1));
+      expect((events.single as CommandExecuted).compile(), 'rps --all test x');
+    });
+
     test('ignores trailing whitespace in references', () {
       final parser = ScriptsParser(
         source: MockedScriptSource('''

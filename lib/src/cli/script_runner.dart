@@ -76,8 +76,10 @@ class ScriptRunner {
         _processEnvironment = processEnvironment ?? io.Platform.environment;
 
   /// Runs [events] in order and stops at the first command that fails.
-  Future<void> run(List<ExecutionEvent> events) async {
-    _confirmAll(events);
+  ///
+  /// Asks for the confirmations first, unless [confirm] is disabled.
+  Future<void> run(List<ExecutionEvent> events, {bool confirm = true}) async {
+    if (confirm) this.confirm(events);
     await _run(events, null);
   }
 
@@ -117,7 +119,15 @@ class ScriptRunner {
     }
   }
 
-  void _confirmAll(List<ExecutionEvent> events) {
+  /// Fails when a command of [events] cannot be built.
+  void validate(List<ExecutionEvent> events) {
+    for (final event in _flatten(events).whereType<CommandExecuted>()) {
+      event.compile(shell: event.settings.shell ?? executor.shell);
+    }
+  }
+
+  /// Asks for every confirmation that [events] need.
+  void confirm(List<ExecutionEvent> events) {
     if (dryRun || assumeYes) return;
     final confirmations =
         _flatten(events).whereType<ConfirmationRequired>().toSet();

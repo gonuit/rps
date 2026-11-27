@@ -116,6 +116,16 @@ class ScriptsParser {
     return node != null;
   }
 
+  /// Whether [arguments] start with the path of a script or a group.
+  bool defines(List<String> arguments) {
+    ScriptNode? node = _analyze();
+    for (final key in arguments) {
+      if (node is! ScriptGroup) break;
+      node = node.children[key];
+    }
+    return node != null;
+  }
+
   /// Resolves [arguments] into an ordered list of execution events.
   List<ExecutionEvent> getCommandsToExecute(List<String> arguments) {
     final root = _analyze();
@@ -177,7 +187,7 @@ class ScriptsParser {
             branches: [
               for (final (index, command) in parallel.indexed)
                 ParallelBranch(
-                  label: command.startsWith('rps ')
+                  label: _isReference(command)
                       ? command.substring(4).trim()
                       : '${index + 1}',
                   events: _command(
@@ -357,6 +367,11 @@ class ScriptsParser {
     });
   }
 
+  // "rps" followed by an option is a call of rps itself, not a reference.
+  static bool _isReference(String command) =>
+      command.startsWith('rps ') &&
+      !command.substring(4).trimLeft().startsWith('-');
+
   List<String> _enter(List<String> stack, String path) {
     if (stack.contains(path)) {
       throw RpsConfigException(
@@ -377,7 +392,7 @@ class ScriptsParser {
     bool isHook = false,
     (int, int)? step,
   }) sync* {
-    if (!command.startsWith(r'rps ')) {
+    if (!_isReference(command)) {
       yield CommandExecuted(
         command: command,
         context: context,

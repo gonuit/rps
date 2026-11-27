@@ -30,6 +30,7 @@ class RpsArguments {
   static const _dryRun = 'dry-run';
   static const _noColor = 'no-color';
   static const _yes = 'yes';
+  static const _all = 'all';
   static const _json = 'json';
   static const _ls = 'ls';
   static const _run = 'run';
@@ -46,6 +47,13 @@ class RpsArguments {
       abbr: 'y',
       negatable: false,
       help: 'Confirms scripts that ask for confirmation.',
+    )
+    ..addFlag(
+      _all,
+      abbr: 'a',
+      negatable: false,
+      help: 'Runs the script in every package of the pub workspace that '
+          'defines it.',
     )
     ..addFlag(
       _noColor,
@@ -88,6 +96,9 @@ class RpsArguments {
   /// Whether scripts that ask for confirmation are confirmed.
   final bool yes;
 
+  /// Whether the script runs in every package of the workspace.
+  final bool all;
+
   /// Whether scripts are listed as JSON.
   final bool json;
 
@@ -100,6 +111,7 @@ class RpsArguments {
     this.noColor = false,
     this.dryRun = false,
     this.yes = false,
+    this.all = false,
     this.json = false,
     this.script = const [],
   });
@@ -140,10 +152,18 @@ class RpsArguments {
     final noColor = flag(_noColor);
     final dryRun = flag(_dryRun);
     final yes = flag(_yes);
+    final all = flag(_all);
 
     RpsArguments build(RpsAction action, {List<String> script = const []}) {
+      if (all && (action == RpsAction.select || action == RpsAction.list)) {
+        throw RpsUsageException(
+          'The --$_all option needs the name of a script.',
+          hint: 'Use it as "rps --$_all <script>".',
+        );
+      }
       return RpsArguments(
         action: action,
+        all: all,
         noColor: noColor,
         dryRun: dryRun,
         yes: yes,

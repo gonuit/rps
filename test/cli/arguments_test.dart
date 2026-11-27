@@ -54,6 +54,27 @@ void main() {
       expect(arguments.script, equals(['run', 'run', '--no-color']));
     });
 
+    test('reads --all before the script name and after run', () {
+      expect(RpsArguments.parse(['--all', 'test']).all, isTrue);
+      expect(RpsArguments.parse(['-a', 'test', 'x']).script, ['test', 'x']);
+      expect(RpsArguments.parse(['run', '--all', 'test']).all, isTrue);
+      expect(RpsArguments.parse(['test', '--all']).all, isFalse);
+    });
+
+    test('rejects --all without a script', () {
+      for (final arguments in [
+        ['--all'],
+        ['--all', 'ls'],
+      ]) {
+        expect(
+          () => RpsArguments.parse(arguments),
+          throwsA(isA<RpsUsageException>()),
+          reason: '$arguments',
+        );
+      }
+      expect(RpsArguments.parse(['--all', '-h']).action, RpsAction.help);
+    });
+
     test('runs the default script for a bare run', () {
       final arguments = RpsArguments.parse(['run']);
 

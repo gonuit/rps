@@ -20,7 +20,9 @@ class RunCommand {
   })  : _getScriptsSource = getScriptsSource,
         _platform = platform;
 
-  List<String> _withoutCommandName(
+  /// Returns [arguments] without the name of the `run` command, unless it
+  /// is the first key of a script.
+  static List<String> scriptPath(
     ScriptsParser parser,
     List<String> arguments,
   ) {
@@ -38,7 +40,7 @@ class RunCommand {
     final parser = ScriptsParser(source: source, platform: _platform);
 
     final events = parser.getCommandsToExecute(
-      _withoutCommandName(parser, arguments),
+      scriptPath(parser, arguments),
     );
 
     if (events.isEmpty) {
